@@ -61,7 +61,7 @@ const DashboardScreen = ({ navigation }) => {
             <Text style={styles.section}>DataCell Panel</Text>
             <Button title="Manage Faculty" onPress={() => navigation.navigate('Faculty')} />
             <Button title="Add Course" onPress={() => navigation.navigate('AddCourse')} />
-            <Button title="AssignCourse" onPress={() => navigation.navigate('AssignCourse')} />
+            <Button title="Assign Course" onPress={() => navigation.navigate('AssignCourse')} />
             <Button title="Paper Verification" onPress={() => navigation.navigate('PaperVerification')} />
           </>
         )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,55 +14,116 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Dropdown } from 'react-native-element-dropdown';
 import DateTimePicker from '@react-native-community/datetimepicker';
-
-// ✅ Document Picker
+import axios from 'axios';
 import { pick, types, isCancel } from "@react-native-documents/picker";
 
+const BASE_URL = "http://192.168.137.1/fypProject/api"; // ⚠️ apna IP lagana
+
 const AssignCourse = ({ navigation }) => {
+
+  const [sessions, setSessions] = useState([]);
+  const [selectedSession, setSelectedSession] = useState(null);
+
   const [showAddSession, setShowAddSession] = useState(false);
-
-  const [session, setSession] = useState(null);
   const [sessionName, setSessionName] = useState('');
-
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
-  const sessionData = [
-    { label: 'Fall 2024', value: 'fall2024' },
-    { label: 'Spring 2025', value: 'spring2025' },
-  ];
+  const [loading, setLoading] = useState(false);
 
-  // ==========================
-  // IMPORT HANDLER
-  // ==========================
+  /* ================= FETCH SESSIONS ================= */
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/session/get_all_sessions`);
+      setSessions(res.data);
+    } catch (error) {
+      Alert.alert("Error", "Failed to load sessions");
+    }
+  };
+
+  /* ================= ADD SESSION ================= */
+  const handleAddSession = async () => {
+
+    if (!sessionName || !startDate || !endDate) {
+      Alert.alert("Error", "All fields required");
+      return;
+    }
+
+    if (startDate > endDate) {
+      Alert.alert("Error", "Start date cannot be after end date");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await axios.post(`${BASE_URL}/session/add_session`, {
+        name: sessionName,
+        start_date: startDate,
+        end_date: endDate
+      });
+
+      Alert.alert("Success", "Session added successfully");
+
+      setSessionName('');
+      setStartDate(null);
+      setEndDate(null);
+      setShowAddSession(false);
+
+      fetchSessions(); // refresh dropdown
+    }
+    catch (err) {
+      Alert.alert("Error", err.response?.data || "Failed to add session");
+    }
+    finally {
+      setLoading(false);
+    }
+  };
+
+  /* ================= IMPORT EXCEL ================= */
   const handleImport = async () => {
+
+    if (!selectedSession) {
+      Alert.alert("Error", "Please select session first");
+      return;
+    }
+
     try {
       const result = await pick({
         type: [types.xlsx, types.xls],
-        allowMultiSelection: false,
       });
 
       const file = result[0];
 
-      console.log("Picked file:", file);
+      const formData = new FormData();
+      formData.append("file", {
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
+      });
 
-      Alert.alert(
-        "File Selected",
-        `Name: ${file.name}\nSize: ${file.size} bytes`
+      const response = await axios.post(
+        `${BASE_URL}/excel/upload?sessionId=${selectedSession}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          }
+        }
       );
 
-      // 👉 You can upload or parse XLS here
-      // file.uri
-
-    } catch (err) {
-      if (isCancel(err)) {
-        console.log("User cancelled document picker");
-      } else {
-        console.error("Document Picker Error:", err);
-        Alert.alert("Error", "Unable to open document picker");
+      Alert.alert("Success", response.data);
+    }
+    catch (err) {
+      if (!isCancel(err)) {
+        Alert.alert("Error", "Excel upload failed");
       }
     }
   };
@@ -76,25 +137,22 @@ const AssignCourse = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={26} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Course</Text>
+        <Text style={styles.headerTitle}>Assign Course</Text>
         <View style={{ width: 26 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Assign Course</Text>
 
         {/* SESSION DROPDOWN */}
         <View style={styles.row}>
           <Dropdown
             style={styles.dropdown}
-            placeholderStyle={styles.dropdownText}
-            selectedTextStyle={{ color: '#000' }}
-            data={sessionData}
-            labelField="label"
-            valueField="value"
+            data={sessions}
+            labelField="name"
+            valueField="id"
             placeholder="Select session"
-            value={session}
-            onChange={item => setSession(item.value)}
+            value={selectedSession}
+            onChange={item => setSelectedSession(item.id)}
           />
 
           <TouchableOpacity
@@ -105,42 +163,38 @@ const AssignCourse = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* ADD NEW SESSION */}
+        {/* ADD SESSION */}
         {showAddSession && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Add New Session</Text>
-
             <TextInput
               style={styles.input}
-              placeholder="Name"
+              placeholder="Session Name"
               value={sessionName}
               onChangeText={setSessionName}
             />
 
-            {/* START DATE */}
             <TouchableOpacity
               style={styles.dateInput}
               onPress={() => setShowStartPicker(true)}
             >
-              <Text style={styles.dateText}>
-                {startDate ? startDate.toDateString() : 'Start Date'}
+              <Text>
+                {startDate ? startDate.toDateString() : "Start Date"}
               </Text>
-              <Ionicons name="calendar-outline" size={18} color="#555" />
             </TouchableOpacity>
 
-            {/* END DATE */}
             <TouchableOpacity
               style={styles.dateInput}
               onPress={() => setShowEndPicker(true)}
             >
-              <Text style={styles.dateText}>
-                {endDate ? endDate.toDateString() : 'End Date'}
+              <Text>
+                {endDate ? endDate.toDateString() : "End Date"}
               </Text>
-              <Ionicons name="calendar-outline" size={18} color="#555" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.addBtn}>
-              <Text style={styles.addBtnText}>Add</Text>
+            <TouchableOpacity style={styles.addBtn} onPress={handleAddSession}>
+              <Text style={{ color: "#fff" }}>
+                {loading ? "Adding..." : "Add"}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -150,7 +204,6 @@ const AssignCourse = ({ navigation }) => {
           <DateTimePicker
             value={startDate || new Date()}
             mode="date"
-            display={Platform.OS === 'android' ? 'calendar' : 'spinner'}
             onChange={(e, date) => {
               setShowStartPicker(false);
               if (date) setStartDate(date);
@@ -162,7 +215,6 @@ const AssignCourse = ({ navigation }) => {
           <DateTimePicker
             value={endDate || new Date()}
             mode="date"
-            display={Platform.OS === 'android' ? 'calendar' : 'spinner'}
             onChange={(e, date) => {
               setShowEndPicker(false);
               if (date) setEndDate(date);
@@ -172,10 +224,7 @@ const AssignCourse = ({ navigation }) => {
 
         {/* IMPORT BUTTON */}
         <TouchableOpacity style={styles.importBtn} onPress={handleImport}>
-          <Text style={styles.importText}>Import</Text>
-          <View style={styles.xlsTag}>
-            <Text style={styles.xlsText}>XLS</Text>
-          </View>
+          <Text style={{ color: "#fff", fontWeight: "700" }}>Import XLS</Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -183,11 +232,8 @@ const AssignCourse = ({ navigation }) => {
   );
 };
 
-
-
-
-
 export default AssignCourse;
+
 
 // ==========================
 // STYLES
