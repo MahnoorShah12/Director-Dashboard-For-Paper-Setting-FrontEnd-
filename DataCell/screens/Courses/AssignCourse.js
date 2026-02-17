@@ -16,8 +16,9 @@ import { Dropdown } from 'react-native-element-dropdown';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import { pick, types, isCancel } from "@react-native-documents/picker";
+import { BASE_URL } from '../../config/Api';
 
-const BASE_URL = "http://192.168.137.1/fypProject/api"; // ⚠️ apna IP lagana
+// const BASE_URL = "http://192.168.137.1/fypProject/api"; // ⚠️ apna IP lagana
 
 const AssignCourse = ({ navigation }) => {
 
