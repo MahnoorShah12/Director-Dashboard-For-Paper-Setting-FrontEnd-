@@ -24,7 +24,7 @@ const AddCourse = ({ navigation }) => {
   /* ================= GET COURSES ================= */
   const fetchCourses = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/course/get_all_courses?page=1&pageSize=2000`);
+      const res = await fetch(`${BASE_URL}/course/get_all_courses?page=1&pageSize=1000`);
 
       const json = await res.json();
       setCourseList(json.data);

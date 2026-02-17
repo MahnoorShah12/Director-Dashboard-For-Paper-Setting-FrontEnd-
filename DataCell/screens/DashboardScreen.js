@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -40,58 +40,64 @@ const DashboardScreen = ({ navigation }) => {
   );
 
   return (
-    <ScrollView>
-      <View style={styles.container}>
-        
-        {/* HEADER */}
-        <View style={styles.header}>
-          <View style={{ width: 24 }} />
-          <Text style={styles.headerTitle}>Dashboard</Text>
+    <>
+      {/* ✅ Status Bar Green */}
+      <StatusBar backgroundColor="#0B8F5A" barStyle="light-content" />
 
-          {/* LOGOUT ICON */}
-          <TouchableOpacity onPress={logout}>
-            <Ionicons name="log-out-outline" size={24} color="#fff" />
-          </TouchableOpacity>
+      <ScrollView>
+        <View style={styles.container}>
+          
+          {/* HEADER */}
+          <View style={styles.header}>
+            <View style={{ width: 24 }} />
+            <Text style={styles.headerTitle}>Dashboard</Text>
+
+            {/* LOGOUT ICON */}
+            <TouchableOpacity onPress={logout}>
+              <Ionicons name="log-out-outline" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.title}>Welcome {name}</Text>
+
+          {roles.includes('datacell') && (
+            <>
+              <Text style={styles.section}>DataCell Panel</Text>
+              <Button title="Manage Faculty" onPress={() => navigation.navigate('Faculty')} />
+              <Button title="Add Course" onPress={() => navigation.navigate('AddCourse')} />
+              <Button title="Assign Course" onPress={() => navigation.navigate('AssignCourse')} />
+              <Button title="Paper Verification" onPress={() => navigation.navigate('PaperVerification')} />
+            </>
+          )}
+
+          {roles.includes('hod') && (
+            <>
+              <Text style={styles.section}>HOD Panel</Text>
+              <Button title="View Faculty" onPress={() => navigation.navigate('ViewFaculty')} />
+              <Button title="View Course" onPress={() => navigation.navigate('ViewCourse')} />
+              <Button title="Assign Paper" onPress={() => navigation.navigate('AssignPaper')} />
+              <Button title="Assign Course" />
+            </>
+          )}
+
+          {roles.includes('director') && (
+            <>
+              <Text style={styles.section}>Director Panel</Text>
+              <Button title="Current Papers" />
+              <Button title="Role Handover" onPress={() => navigation.navigate('DutySwitch')} />
+            </>
+          )}
+
+          {roles.includes('faculty') && (
+            <>
+              <Text style={styles.section}>Faculty Panel</Text>
+              <Button title="My Subjects" />
+            </>
+          )}
+
         </View>
-
-        <Text style={styles.title}>Welcome {name}</Text>
-
-        {roles.includes('datacell') && (
-          <>
-            <Text style={styles.section}>DataCell Panel</Text>
-            <Button title="Manage Faculty" onPress={() => navigation.navigate('Faculty')} />
-            <Button title="Add Course" onPress={() => navigation.navigate('AddCourse')} />
-            <Button title="Assign Course" onPress={() => navigation.navigate('AssignCourse')} />
-            <Button title="Paper Verification" onPress={() => navigation.navigate('PaperVerification')} />
-          </>
-        )}
-
-        {roles.includes('hod') && (
-          <>
-            <Text style={styles.section}>HOD Panel</Text>
-            <Button title="View Faculty" onPress={() => navigation.navigate('ViewFaculty')} />
-            <Button title="View Course" onPress={() => navigation.navigate('ViewCourse')} />
-            <Button title="Assign Paper" />
-            <Button title="Assign Course" />
-          </>
-        )}
-
-        {roles.includes('director') && (
-          <>
-            <Text style={styles.section}>Director Panel</Text>
-            <Button title="Current Papers" />
-          </>
-        )}
-
-        {roles.includes('faculty') && (
-          <>
-            <Text style={styles.section}>Faculty Panel</Text>
-            <Button title="My Subjects" />
-          </>
-        )}
-
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 };
 

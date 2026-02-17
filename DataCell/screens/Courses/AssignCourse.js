@@ -18,7 +18,6 @@ import axios from 'axios';
 import { pick, types, isCancel } from "@react-native-documents/picker";
 import { BASE_URL } from '../../config/Api';
 
-// const BASE_URL = "http://192.168.137.1/fypProject/api"; // ⚠️ apna IP lagana
 
 const AssignCourse = ({ navigation }) => {
 
@@ -170,6 +169,7 @@ const AssignCourse = ({ navigation }) => {
             <TextInput
               style={styles.input}
               placeholder="Session Name"
+              placeholderTextColor={'#777'}
               value={sessionName}
               onChangeText={setSessionName}
             />

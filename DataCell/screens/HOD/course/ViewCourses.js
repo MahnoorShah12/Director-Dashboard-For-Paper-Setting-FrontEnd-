@@ -13,6 +13,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import { BASE_URL } from '../../../config/Api';
 
+
 const ViewCourses = ({ navigation }) => {
   // ====== HOOKS (SIRF YAHAN) ======
   const [courses, setCourses] = useState([]);

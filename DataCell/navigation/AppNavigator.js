@@ -17,6 +17,8 @@ import ViewCourse from '../screens/HOD/course/ViewCourses';
 import ViewCLO from '../screens/HOD/course/ViewCLO';
 import ViewTopics from '../screens/HOD/course/ViewTopics';
 import AssessmentPolicy from '../screens/HOD/course/AssessmentPolicy';
+import AssignPaper from '../screens/HOD/course/AssignPaper';
+import DutySwitch from '../screens/Director/DutySwitch'
 
 
 const Stack = createNativeStackNavigator();
@@ -40,6 +42,8 @@ const AppNavigator = () => {
           {/* {/datacell} */}
          
              <Stack.Screen name="AssignCourse" component={AssignCourse}  />
+               <Stack.Screen name="AssignPaper" component={AssignPaper}  />
+               <Stack.Screen name="DutySwitch" component={DutySwitch}  />
 
       </Stack.Navigator>
     </NavigationContainer>

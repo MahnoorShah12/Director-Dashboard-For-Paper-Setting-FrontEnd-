@@ -339,11 +339,11 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
-const BASE_URL = 'http://192.168.137.1/fypProject';
+import { BASE_URL } from '../../../config/Api';
 
 export default function ViewFaculty({ navigation }) {
   const [teachers, setTeachers] = useState([]);
@@ -354,7 +354,6 @@ export default function ViewFaculty({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const pageSize = 10;
 
-  // 🔹 FETCH TEACHERS
   const fetchTeachers = async (pageNumber = 1) => {
     if (pageNumber > totalPages) return;
 
@@ -362,7 +361,7 @@ export default function ViewFaculty({ navigation }) {
       if (pageNumber === 1) setLoading(true);
 
       const response = await fetch(
-        `${BASE_URL}/api/faculty/get_teachers?page=${pageNumber}&pageSize=${pageSize}`
+        `${BASE_URL}/faculty/get_teachers?page=${pageNumber}&pageSize=${pageSize}`
       );
       const json = await response.json();
 
@@ -370,7 +369,6 @@ export default function ViewFaculty({ navigation }) {
         let newData =
           pageNumber === 1 ? json.data : [...teachers, ...json.data];
 
-        // 🔹 REMOVE DUPLICATES
         const uniqueData = [];
         const ids = new Set();
         newData.forEach(item => {
@@ -399,19 +397,19 @@ export default function ViewFaculty({ navigation }) {
     fetchTeachers(1);
   }, []);
 
-  // 🔹 SEARCH FILTER
   const filteredData = teachers.filter(item =>
     item.Name?.toLowerCase().includes(search.toLowerCase()) ||
     item.Email?.toLowerCase().includes(search.toLowerCase()) ||
     item.Phone?.includes(search)
   );
 
-  // 🔹 CARD UI
   const renderFaculty = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{item.Name?.charAt(0)}</Text>
+          <Text style={styles.avatarText}>
+            {item.Name?.charAt(0)}
+          </Text>
         </View>
         <Text style={styles.cardName}>{item.Name}</Text>
       </View>
@@ -436,6 +434,43 @@ export default function ViewFaculty({ navigation }) {
             <Text style={styles.value}>{item.Phone}</Text>
           </View>
         </View>
+
+        {/* Buttons */}
+        <View style={styles.buttonRow}>
+          {/* <TouchableOpacity
+            style={styles.callBtn}
+            onPress={() => Linking.openURL(`tel:${item.Phone}`)}
+          >
+            <Ionicons name="call-outline" size={18} color="#fff" />
+            <Text style={styles.callText}>Call</Text>
+          </TouchableOpacity> */}
+          <TouchableOpacity
+  style={styles.callBtn}
+  onPress={() => {
+    const cleanNumber = item.Phone
+      ? item.Phone.replace(/[^0-9+]/g, '')
+      : '';
+
+    if (cleanNumber) {
+      Linking.openURL(`tel:${cleanNumber}`);
+    } else {
+      console.log('Invalid phone number');
+    }
+  }}
+>
+  <Ionicons name="call-outline" size={18} color="#fff" />
+  <Text style={styles.callText}>Call</Text>
+</TouchableOpacity>
+
+
+          <TouchableOpacity
+            style={styles.emailBtn}
+            onPress={() => Linking.openURL(`mailto:${item.Email}`)}
+          >
+            <Ionicons name="mail-outline" size={18} color="#0A9F6C" />
+            <Text style={styles.emailText}>Email</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -452,101 +487,108 @@ export default function ViewFaculty({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* 🔹 HEADER */}
-      
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.back}>{'<'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle2}>Faculty</Text>
-        <View style={{ width: 24 }} />
-      </View>
-      <Text style={styles.headerTitle}>Faculty Detail</Text>
-                      <View style={{ width: 26 }} />
-                    
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F4F6F8' }}>
+      <FlatList
+        data={filteredData}
+        renderItem={renderFaculty}
+        keyExtractor={(item) => `${item.Id}`}
+        showsVerticalScrollIndicator={false}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        ListHeaderComponent={
+          <>
+            {/* <View style={styles.header}>
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Ionicons name="chevron-back" size={26} color="#fff" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle2}>Faculty</Text>
+              <View style={{ width: 26 }} />
+            </View>
+ */}
+ <View style={styles.header}>
+             <View style={{ width: 24 }} />
+             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                <Ionicons name="chevron-back" size={26} color="#fff"  />
+              </TouchableOpacity>
+             <Text style={styles.headerTitle}>faculty</Text>
+              </View>
 
-      {/* 🔹 SEARCH */}
-      <View style={styles.searchBox}>
-        <Ionicons name="search" size={18} color="#999" />
-        <TextInput
-          placeholder="Search by name, email or phone..."
-          placeholderTextColor="#999"
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-        />
-      </View>
+            <Text style={styles.headerTitle3}>Faculty Detail</Text>
 
-      {/* 🔹 LIST */}
-      {loading && page === 1 ? (
-        <ActivityIndicator
-          size="large"
-          color="#0A9F6C"
-          style={{ marginTop: 40 }}
-        />
-      ) : (
-        <FlatList
-          data={filteredData}
-          renderItem={renderFaculty}
-          keyExtractor={(item) => `${item.Id}`}
-          showsVerticalScrollIndicator={false}
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          ListEmptyComponent={
+            <View style={styles.searchBox}>
+              <Ionicons name="search" size={18} color="#999" />
+              <TextInput
+                placeholder="Search by name, email or phone..."
+                placeholderTextColor="#999"
+                style={styles.searchInput}
+                value={search}
+                onChangeText={setSearch}
+              />
+            </View>
+
+            {loading && page === 1 && (
+              <ActivityIndicator
+                size="large"
+                color="#0A9F6C"
+                style={{ marginVertical: 20 }}
+              />
+            )}
+          </>
+        }
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 30 }}
+        ListEmptyComponent={
+          !loading && (
             <Text style={{ textAlign: 'center', marginTop: 40 }}>
               No faculty found
             </Text>
-          }
-          style={{ flex: 1 }}
-        />
-      )}
+          )
+        }
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F4F6F8',
-    paddingHorizontal: 16,
-  },
   header: {
     backgroundColor: '#0B8F5A',
     padding: 18,
     borderRadius: 18,
     marginBottom: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'Column',
+     justifyContent: 'flex-start',
     alignItems: 'center',
   },
-   headerTitle2: {
-    color: '#f4faf8',
-    fontSize: 30,
-    fontWeight: '500',
-   
-  },
+
   headerTitle: {
-    color: '#0B8F5A',
+    color: '#fff',
     fontSize: 20,
     fontWeight: '700',
   },
-  back: {
+
+  
+  headerTitle2: {
+    flex: 1,
+    textAlign: 'center',
     color: '#fff',
-    fontSize: 26,
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  headerTitle3: {
+    color: '#0B8F5A',
+    fontSize: 18,
     fontWeight: '700',
+    marginBottom: 14,
   },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-    height: 45,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    marginBottom: 18,
+    height: 48,
   },
   searchInput: {
     flex: 1,
@@ -554,20 +596,22 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 14,
-    marginBottom: 16,
-    elevation: 3,
+    borderRadius: 18,
+    marginBottom: 18,
+    elevation: 4,
   },
   cardHeader: {
     backgroundColor: '#0A9F6C',
-    padding: 14,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
@@ -576,15 +620,15 @@ const styles = StyleSheet.create({
   avatarText: {
     color: '#0A9F6C',
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 20,
   },
   cardName: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
   },
   cardBody: {
-    padding: 14,
+    padding: 16,
   },
   infoRow: {
     flexDirection: 'row',
@@ -608,5 +652,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#111',
     fontWeight: '500',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  callBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0A9F6C',
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    borderRadius: 10,
+  },
+  callText: {
+    color: '#fff',
+    marginLeft: 6,
+    fontWeight: '600',
+  },
+  emailBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#0A9F6C',
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    borderRadius: 10,
+  },
+  emailText: {
+    color: '#0A9F6C',
+    marginLeft: 6,
+    fontWeight: '600',
   },
 });

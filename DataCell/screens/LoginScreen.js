@@ -7,11 +7,11 @@ import {
   StyleSheet,
   Image,
   Alert,
+  StatusBar
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL, API } from '../config/Api';
-
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -24,11 +24,8 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
-       const response = await fetch(
+      const response = await fetch(
         `${BASE_URL}${API.login}`,
-       
-      //   // `${BASE_URL}/auth/login`,
-      //    'http://192.168.137.1/fypProject/api/auth/login',
         {
           method: 'POST',
           headers: {
@@ -66,69 +63,75 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* TOP GREEN SECTION */}
-      <View style={styles.topSection}>
-        <View style={styles.logoBox}>
-          <Image
-            source={require('../assets/biit_logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+    <>
+      {/* ✅ Green Status Bar */}
+      <StatusBar backgroundColor="#0B8F5A" barStyle="light-content" />
+
+      <View style={styles.container}>
+        {/* TOP GREEN SECTION */}
+        <View style={styles.topSection}>
+          <View style={styles.logoBox}>
+            <Image
+              source={require('../assets/biit_logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
+
+          <Text style={styles.headerText}>
+            Director Dashboard for Paper Setting
+          </Text>
         </View>
 
-        <Text style={styles.headerText}>
-          Director Dashboard for Paper Setting
-        </Text>
+        {/* WHITE CARD */}
+        <View style={styles.card}>
+          <Text style={styles.welcome}>Welcome</Text>
+          <Text style={styles.subText}>Login to access the dashboard</Text>
+
+          {/* EMAIL */}
+          <Text style={styles.label}>Email Address</Text>
+          <View style={styles.inputRow}>
+            <Ionicons name="mail-outline" size={20} color="#0c0d0d" />
+            <TextInput
+              style={styles.input}
+              placeholder="youremail@biit.edu.pk"
+              placeholderTextColor="#999"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
+
+          {/* PASSWORD */}
+          <Text style={styles.label}>Password</Text>
+          <View style={styles.inputRow}>
+            <Ionicons name="lock-closed-outline" size={20} color="#0c0c0c" />
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your password"
+              placeholderTextColor="#999"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
+
+          {/* FORGOTTEN PASSWORD */}
+          <TouchableOpacity>
+            <Text style={styles.forgotText}>Forgotten password?</Text>
+          </TouchableOpacity>
+
+          {/* LOGIN BUTTON */}
+          <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
+            <Text style={styles.loginText}>LOGIN</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-
-      {/* WHITE CARD */}
-      <View style={styles.card}>
-        <Text style={styles.welcome}>Welcome</Text>
-        <Text style={styles.subText}>Login to access the dashboard</Text>
-
-        {/* EMAIL */}
-        <Text style={styles.label}>Email Address</Text>
-        <View style={styles.inputRow}>
-          <Ionicons name="mail-outline" size={20} color="#0c0d0d" />
-          <TextInput
-            style={styles.input}
-            placeholder="youremail@biit.edu.pk"
-            placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-          />
-        </View>
-
-        {/* PASSWORD */}
-        <Text style={styles.label}>Password</Text>
-        <View style={styles.inputRow}>
-          <Ionicons name="lock-closed-outline" size={20} color="#0c0c0c" />
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your password"
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-        </View>
-
-        {/* FORGOTTEN PASSWORD */}
-        <TouchableOpacity>
-          <Text style={styles.forgotText}>Forgotten password?</Text>
-        </TouchableOpacity>
-
-        {/* LOGIN BUTTON */}
-        <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-          <Text style={styles.loginText}>LOGIN</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </>
   );
 };
 
 export default LoginScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
