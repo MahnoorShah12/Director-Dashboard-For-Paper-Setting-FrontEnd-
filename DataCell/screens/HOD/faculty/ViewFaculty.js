@@ -567,7 +567,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  
+  backButton: {
+  position: 'absolute',   // Icon ko parent ke relative position ke hisaab se place kare
+  left: 10,               // Left edge se 10px dur
+  top: '50%',             // Vertically center karne ke liye
+  transform: [{ translateY: -13 }], // Icon height ka half (26/2 = 13) adjust kare
+  padding: 10,            // Touch area badi ho
+  zIndex: 1,              // Ensure ke upar show ho
+}
+,
   headerTitle2: {
     flex: 1,
     textAlign: 'center',
@@ -657,14 +665,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
+    
   },
   callBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#0A9F6C',
     paddingVertical: 10,
-    paddingHorizontal: 28,
+    paddingHorizontal: 32,
     borderRadius: 10,
+    
   },
   callText: {
     color: '#fff',

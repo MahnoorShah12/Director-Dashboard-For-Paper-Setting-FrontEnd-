@@ -94,7 +94,7 @@ const ViewTopics = ({ navigation, route }) => {
         text: 'Delete',
         onPress: async () => {
           // Fixed integration: backend expects POST /deleteTopic/{topicId}
-          await fetch(`${BASE_URL}/deleteTopic/${id}`, {
+          await fetch(`${BASE_URL}/topic/deleteTopic/${id}`, {
             method: 'POST',
           });
           fetchTopics();
@@ -154,7 +154,7 @@ const ViewTopics = ({ navigation, route }) => {
             style={styles.checkBtn}
             onPress={() => saveEdit(item.id)}
           >
-            <Text style={styles.btnLabel}>Save</Text>
+            <Text style={styles.btnLabel}>Update</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.cancelBtn}

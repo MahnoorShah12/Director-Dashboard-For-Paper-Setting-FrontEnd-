@@ -134,7 +134,7 @@ export default function AssignPaper({ navigation }) {
               <TouchableOpacity onPress={() => navigation.goBack()}>
                 <Text style={styles.back}>{'<'}</Text>
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>Assign  Course</Text>
+              <Text style={styles.headerTitle}>Assign  Paper</Text>
               <View style={{ width: 24 }} />
             </View>
 

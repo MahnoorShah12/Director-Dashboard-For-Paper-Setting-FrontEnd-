@@ -9,18 +9,20 @@ import {
   Alert,
   StatusBar,
   TextInput,
+  Keyboard,
+  TouchableWithoutFeedback,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BASE_URL } from '../../../config/Api';
-
-// const BASE_URL = 'http://192.168.137.1/fypProject/api/clos';
 
 const ViewCLOs = ({ navigation, route }) => {
   const { courseId, courseCode } = route.params || {};
 
   const [clos, setClos] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [text, setText] = useState('');
@@ -32,10 +34,7 @@ const ViewCLOs = ({ navigation, route }) => {
       const json = await res.json();
 
       const formatted = Array.isArray(json)
-        ? json.map(c => ({
-            id: c.id,
-            description: c.description,
-          }))
+        ? json.map(c => ({ id: c.id, description: c.description }))
         : [];
 
       setClos(formatted);
@@ -152,63 +151,109 @@ const ViewCLOs = ({ navigation, route }) => {
     );
   };
 
-  return (
-    <View style={styles.container}>
-      <StatusBar backgroundColor="#0B8F5A" barStyle="light-content" />
+  /* ================= DISMISS KEYBOARD ================= */
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+    setAdding(false);
+    setEditingId(null);
+    setText('');
+  };
 
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>CLO - {courseCode}</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={26} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {/* ADD INPUT */}
-      {adding && (
-        <View style={styles.addCard}>
-          <View style={styles.editRow}>
-            <TextInput
-              placeholder="Enter CLO description"
-              value={text}
-              onChangeText={setText}
-              style={styles.input}
-            />
-            <TouchableOpacity onPress={addCLO} style={styles.ok}>
-              <Ionicons name="checkmark" size={22} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setAdding(false);
-                setText('');
-              }}
-              style={styles.cancel}
-            >
-              <Ionicons name="close" size={22} color="#333" />
-            </TouchableOpacity>
-          </View>
+  /* ================= HEADER INPUT ================= */
+  const renderHeader = () =>
+    adding ? (
+      <View style={styles.addCard}>
+        <View style={styles.editRow}>
+          <TextInput
+            placeholder="Enter CLO description"
+            value={text}
+            onChangeText={setText}
+            style={styles.input}
+            autoFocus
+          />
+          <TouchableOpacity onPress={addCLO} style={styles.ok}>
+            <Ionicons name="checkmark" size={22} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setAdding(false);
+              setText('');
+            }}
+            style={styles.cancel}
+          >
+            <Ionicons name="close" size={22} color="#333" />
+          </TouchableOpacity>
         </View>
-      )}
+      </View>
+    ) : null;
 
-      {/* ADD BUTTON */}
-      <TouchableOpacity
-        style={styles.addBtn}
-        onPress={() => setAdding(true)}
+  /* ================= MAIN ================= */
+  return (
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Ionicons name="add" size={26} color="#fff" />
-      </TouchableOpacity>
+        <TouchableWithoutFeedback onPress={dismissKeyboard}>
+          <View style={{ flex: 1 }}>
+            {/* HEADER */}
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>CLO - {courseCode}</Text>
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Ionicons name="close" size={26} color="#fff" />
+              </TouchableOpacity>
+            </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#0B8F5A" style={{ marginTop: 40 }} />
-      ) : (
-        <FlatList
-          data={clos}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-        />
-      )}
-    </View>
+            {/* ADD BUTTON */}
+            {!adding && editingId === null && (
+              <TouchableOpacity
+                style={styles.addBtn}
+                onPress={() => setAdding(true)}
+              >
+                <Ionicons name="add" size={26} color="#fff" />
+              </TouchableOpacity>
+            )}
+
+            {loading ? (
+              <ActivityIndicator
+                size="large"
+                color="#0B8F5A"
+                style={{ marginTop: 40 }}
+              />
+            ) : (
+              <FlatList
+                data={clos}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderItem}
+                ListHeaderComponent={renderHeader}
+                ListEmptyComponent={
+                  !adding && (
+                    <View style={{ alignItems: 'center', marginTop: 60 }}>
+                      <Ionicons
+                        name="information-circle-outline"
+                        size={42}
+                        color="#9CA3AF"
+                      />
+                      <Text
+                        style={{
+                          marginTop: 12,
+                          fontSize: 15,
+                          fontWeight: '600',
+                          color: '#6B7280',
+                        }}
+                      >
+                        No CLOs added for this course
+                      </Text>
+                    </View>
+                  )
+                }
+                contentContainerStyle={{ paddingBottom: 30 }}
+              />
+            )}
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
@@ -216,36 +261,32 @@ export default ViewCLOs;
 
 /* ================= STYLES ================= */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF', // ✅ FULL WHITE SCREEN
-  },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
 
   header: {
     backgroundColor: '#0B8F5A',
     padding: 18,
+    borderRadius: 18,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
   },
 
-  headerTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-  },
+  headerTitle: { color: '#fff', fontSize: 22, fontWeight: '700' },
 
   addBtn: {
-    position: 'absolute',
-    right: 18,
-    top: 90,
-    backgroundColor: '#10B981',
     width: 52,
     height: 52,
+    position: 'absolute',
+    right: 16,
+    top: 80,
     borderRadius: 26,
+    backgroundColor: '#0FAF8F',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
+    elevation: 5,
   },
 
   cloCard: {

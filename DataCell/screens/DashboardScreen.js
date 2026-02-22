@@ -84,6 +84,8 @@ const DashboardScreen = ({ navigation }) => {
             <>
               <Text style={styles.section}>Director Panel</Text>
               <Button title="Current Papers" />
+              <Button title="Past Papers" />
+              <Button title="Paper Submission Plan " onPress={() => navigation.navigate('VettingAlerts')} />
               <Button title="Role Handover" onPress={() => navigation.navigate('DutySwitch')} />
             </>
           )}
@@ -91,7 +93,8 @@ const DashboardScreen = ({ navigation }) => {
           {roles.includes('faculty') && (
             <>
               <Text style={styles.section}>Faculty Panel</Text>
-              <Button title="My Subjects" />
+              <Button title="Object Oriented Programing " />
+               <Button title="Data Structures " />
             </>
           )}
 
