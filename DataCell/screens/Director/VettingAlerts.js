@@ -35,6 +35,9 @@ const VettingAlerts = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [vettingErrors, setVettingErrors] = useState([]);
+    // const [Message, setMessage] = useState([]);
+    const [message, setMessage] = useState("");       // Message text
+const [messageType, setMessageType] = useState(""); // "error" ya "success"
 
   const senderId = 1;
   const alphabetButtons = [["A","D"],["E","H"],["I","L"],["M","P"],["Q","T"],["U","Z"]];
@@ -91,36 +94,64 @@ const VettingAlerts = () => {
     setAlphabetRange({ start: "", end: "" });
   };
 
-  // ======= SUBMISSION PERIOD =======
-  const sendSubmissionPeriod = async () => {
-    if (!startDate || !endDate) {
-      Alert.alert("Error", "Select start and end dates");
-      return;
-    }
-    if (startDate > endDate) {
-      Alert.alert("Error", "Start date must be before end date");
-      return;
-    }
-    try {
-      setLoading(true);
-      await axios.post(`${BASE_URL}/DirectorAlert/submission-period/send`, {
-        StartDate: startDate.toISOString(),
-        EndDate: endDate.toISOString(),
-        SenderId: senderId,
-        SessionId: null
-      });
-      Alert.alert("Success","Submission period alert sent to all teachers");
-      setStartDate(null);
-      setEndDate(null);
-    } catch (error) {
-      console.log(error.response?.data || error.message);
-      Alert.alert("Error","Failed to send submission period");
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+const sendSubmissionPeriod = async () => {
+  if (!startDate || !endDate) {
+    setVettingErrors(["Please select start and end dates"]);
+    return;
+  }
 
-  // ======= ASSIGN VETTING =======
+  if (startDate > endDate) {
+    setVettingErrors(["Start date must be before end date"]);
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setVettingErrors([]);
+
+    const payload = {
+      StartDate: startDate.toISOString(),
+      EndDate: endDate.toISOString(),
+      SenderId: senderId,
+      SessionId: null
+    };
+
+    const res = await axios.post(
+      `${BASE_URL}/DirectorAlert/submission-period/send`,
+      payload
+    );
+
+    let message = "Submission period alert sent to all teachers";
+
+    if (typeof res.data === "string") {
+      message = res.data;
+    } else if (res.data?.Message) {
+      message = res.data.Message;
+    }
+
+    // Success bhi yahin show karwa dein
+    setVettingErrors([message]);
+
+    setStartDate(null);
+    setEndDate(null);
+
+  } catch (error) {
+    let errorMsg = "Failed to send submission period";
+
+    if (typeof error.response?.data === "string") {
+      errorMsg = error.response.data;
+    } else if (error.response?.data?.Message) {
+      errorMsg = error.response.data.Message;
+    }
+
+    setVettingErrors([errorMsg]);
+
+  } finally {
+    setLoading(false);
+  }
+};
+//   // ======= ASSIGN VETTING =======
   const assignVetting = async () => {
     if (!vettingDate) return Alert.alert("Error","Select vetting date");
     if (selectedTeachers.length === 0) return Alert.alert("Error","Select at least one teacher");
@@ -166,6 +197,70 @@ const VettingAlerts = () => {
       setLoading(false);
     }
   };
+//   const assignVetting = async () => {
+//   // Validate vetting date/time
+//   if (!vettingDate && !vettingTime) {
+//     setMessage("Please select vetting date and/or time");
+//     setMessageType("error");
+//     return;
+//   }
+
+//   if (selectedTeachers.length === 0) {
+//     setMessage("Please select at least one teacher");
+//     setMessageType("error");
+//     return;
+//   }
+
+//   try {
+//     setLoading(true);
+//     setVettingErrors([]);
+
+//     // Teacher IDs numeric me convert
+//     const teacherIds = selectedTeachers.map(id => Number(id));
+
+//     // Time ko HH:mm:ss format me convert
+//     let formattedTime = null;
+//     if (vettingTime) {
+//       const [h, m] = vettingTime.split(":");
+//       formattedTime = `${h.padStart(2, "0")}:${m.padStart(2, "0")}:00`;
+//     }
+
+//     // API call
+//     const res = await axios.post(
+//       `${BASE_URL}/DirectorAlert/vetting/assign-group`,
+//       {
+//         VettingDate: vettingDate ? vettingDate.toISOString() : null,
+//         VettingTime: formattedTime,
+//         SenderId: senderId,
+//         TeacherIds: teacherIds,
+//         SessionId: null
+//       }
+//     );
+
+//     const data = res.data;
+
+//     // Success message show karna
+//     setMessage(data.Message || `Vetting assigned to ${teacherIds.length} teacher(s)`);
+//     setMessageType("success");
+
+//     // Failed items
+//     const failedItems = data.Details?.filter(d => d.Status === "Failed") || [];
+//     setVettingErrors(failedItems);
+
+//     // Reset selections
+//     setSelectedTeachers([]);
+//     setAlphabetRange({ start: "", end: "" });
+//     setVettingDate(null);
+//     setVettingTime(null);
+
+//   } catch (error) {
+//     console.error(error.response?.data || error.message);
+//     setMessage("Failed to assign vetting");
+//     setMessageType("error");
+//   } finally {
+//     setLoading(false);
+//   }
+// };
 
   // ======= RENDER TEACHERS =======
   const renderTeacher = ({ item }) => {
@@ -192,13 +287,13 @@ const VettingAlerts = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Vetting & Alert</Text>
+        <Text style={styles.headerTitle}>Vetting & Alert Managment </Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Submission Period */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Submission Period Alert</Text>
+          <Text style={styles.sectionTitle}>Submission Period </Text>
 
           <TouchableOpacity style={styles.input} onPress={() => setShowStartPicker(true)}>
             <Ionicons name="calendar-outline" size={18}/>
@@ -214,7 +309,23 @@ const VettingAlerts = () => {
             <Text style={styles.primaryTxt}>Send Alert to All Teachers</Text>
           </TouchableOpacity>
         </View>
-
+        {message !== "" && (
+  <View style={{ padding: 10, margin: 10, backgroundColor: messageType === "error" ? "#f8d7da" : "#d1e7dd", borderRadius: 8 }}>
+    <Text style={{ color: messageType === "error" ? "#842029" : "#0f5132" }}>
+      {message}
+    </Text>
+  </View>
+)}
+{vettingErrors.length > 0 && (
+  <View style={{ marginTop: 10 }}>
+    {vettingErrors.map((err, index) => (
+      <Text key={index} style={{ color: "red", marginBottom: 4 }}>
+        {err}
+      </Text>
+    ))}
+  </View>
+  
+)}
         {/* Alphabet Filter */}
         <View style={styles.cardPurple}>
           <Text style={styles.sectionTitle}>Filter Teachers by Alphabet</Text>
@@ -259,11 +370,14 @@ const VettingAlerts = () => {
         {loading ? <ActivityIndicator size="large"/> :
           <FlatList
             data={filteredTeachers}
+      
             keyExtractor={i => i.id.toString()}
             renderItem={renderTeacher}
+
             scrollEnabled={false}
           />
         }
+        
 
       </ScrollView>
 
