@@ -263,26 +263,56 @@ const sendSubmissionPeriod = async () => {
 // };
 
   // ======= RENDER TEACHERS =======
-  const renderTeacher = ({ item }) => {
-    const selected = selectedTeachers.includes(item.id);
-    return (
-      <TouchableOpacity
-        style={[styles.teacherCard, selected && styles.teacherSelected]}
-        onPress={() => toggleTeacher(item.id)}
-      >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarTxt}>{item.name?.charAt(0) || ""}</Text>
-        </View>
-        <View style={{flex:1}}>
-          <Text style={styles.teacherName}>{item.name || ""}</Text>
-          <Text style={styles.teacherCourse}>{(item.courses?.join(", ") || "No course assigned")}</Text>
-        </View>
-        {selected && <Ionicons name="checkmark-circle" size={24} color="#0f9d58"/>}
-      </TouchableOpacity>
-    );
-  };
+  // const renderTeacher = ({ item }) => {
+  //   const selected = selectedTeachers.includes(item.id);
+  //   return (
+  //     <TouchableOpacity
+  //       style={[styles.teacherCard, selected && styles.teacherSelected]}
+  //       onPress={() => toggleTeacher(item.id)}
+  //     >
+  //       <View style={styles.avatar}>
+  //         <Text style={styles.avatarTxt}>{item.name?.charAt(0) || ""}</Text>
+  //       </View>
+  //       <View style={{flex:1}}>
+  //         <Text style={styles.teacherName}>{item.name || ""}</Text>
+  //         <Text style={styles.teacherCourse}>{(item.courses?.join(", ") || "No course assigned")}</Text>
+  //       </View>
+  //       {selected && <Ionicons name="checkmark-circle" size={24} color="#0f9d58"/>}
+  //     </TouchableOpacity>
+  //   );
+  // };
 
   const selectedCount = selectedTeachers.length;
+  const renderTeacher = ({ item }) => {
+  const selected = selectedTeachers.includes(item.id);
+
+  return (
+    <TouchableOpacity
+      style={[styles.teacherCard, selected && styles.teacherSelected]}
+      onPress={() => toggleTeacher(item.id)}
+    >
+      <View style={styles.avatar}>
+        <Text style={styles.avatarTxt}>
+          {item.name?.charAt(0) || ""}
+        </Text>
+      </View>
+
+      <View style={{ flex: 1 }}>
+        <Text style={styles.teacherName}>{item.name || ""}</Text>
+
+        <Text style={styles.teacherCourse}>
+          {item.courses?.length > 0
+            ? item.courses.map(c => c.courseName).join(", ")
+            : "No course assigned"}
+        </Text>
+      </View>
+
+      {selected && (
+        <Ionicons name="checkmark-circle" size={24} color="#0f9d58" />
+      )}
+    </TouchableOpacity>
+  );
+};
 
   return (
     <View style={styles.container}>

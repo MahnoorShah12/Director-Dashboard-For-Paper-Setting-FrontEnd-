@@ -43,9 +43,12 @@ const LoginScreen = ({ navigation }) => {
 
       if (response.ok && data.success) {
         const { user, roles, token } = data;
+         await AsyncStorage.setItem('user_id', user.id.toString());  // <-- ADD THIS LINE
+  await AsyncStorage.setItem('user_name', user.name);
+  await AsyncStorage.setItem('user_roles', JSON.stringify(roles));
 
-        await AsyncStorage.setItem('user_name', user.name);
-        await AsyncStorage.setItem('user_roles', JSON.stringify(roles));
+        // await AsyncStorage.setItem('user_name', user.name);
+        // await AsyncStorage.setItem('user_roles', JSON.stringify(roles));
         if (token) {
           await AsyncStorage.setItem('token', token);
         }

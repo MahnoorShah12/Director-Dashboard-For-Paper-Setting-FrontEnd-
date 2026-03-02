@@ -20,7 +20,12 @@ import AssessmentPolicy from '../screens/HOD/course/AssessmentPolicy';
 import AssignPaper from '../screens/HOD/course/AssignPaper';
 import DutySwitch from '../screens/Director/DutySwitch';
 import VettingAlerts from '../screens/Director/VettingAlerts';
+import  MySubjects from '../screens/FacultyMember/MySubjects';
 
+import  SubjectClo from '../screens/FacultyMember/Subjects/CLO';
+import  SubjectTopic from '../screens/FacultyMember/Subjects/Topic';
+
+;
 
 
 const Stack = createNativeStackNavigator();
@@ -48,6 +53,10 @@ const AppNavigator = () => {
                {/* director */}
                <Stack.Screen name="DutySwitch" component={DutySwitch}  />
                 <Stack.Screen name="VettingAlerts" component={VettingAlerts}  />
+                {/* {FacultyMember} */}
+                <Stack.Screen name="MySubjects" component={MySubjects} />
+                 <Stack.Screen name="ViewTopics" component={SubjectTopic} />
+                       <Stack.Screen name="ViewCLOs" component={SubjectClo} />
 
 
       </Stack.Navigator>
