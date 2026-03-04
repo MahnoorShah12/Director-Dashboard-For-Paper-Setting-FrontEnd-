@@ -93,7 +93,9 @@ const MySubjects = () => {
 
   return (
     <ScrollView style={styles.container}>
+      <Text style={styles.screenHeading}>Course Detail</Text>
       {course ? (
+         
         <View style={styles.courseDetails}>
           <Text style={styles.courseTitle}>{course.CourseTitle}</Text>
           <Text style={styles.courseCode}>Course Code: {course.CourseCode}</Text>
@@ -168,6 +170,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#e6fff6",
     padding: 20,
   },
+  screenHeading: {
+  fontSize: 24,
+  fontWeight: "700",
+  color: "#0aa36c",
+  textAlign: "center",
+  marginTop: 10,
+  marginBottom: 15,
+},
   loadingText: {
     marginTop: 100,
     textAlign: "center",

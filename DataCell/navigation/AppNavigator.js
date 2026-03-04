@@ -55,7 +55,7 @@ const AppNavigator = () => {
                 <Stack.Screen name="VettingAlerts" component={VettingAlerts}  />
                 {/* {FacultyMember} */}
                 <Stack.Screen name="MySubjects" component={MySubjects} />
-                 <Stack.Screen name="ViewTopics" component={SubjectTopic} />
+                 <Stack.Screen name="ViewTopics" component={SubjectTopic } />
                        <Stack.Screen name="ViewCLOs" component={SubjectClo} />
 
 

@@ -61,6 +61,10 @@ const SubjectClo = ({ route }) => {
 
   return (
     <ScrollView style={styles.container}>
+        <View style={styles.header1}>
+                    <Text style={styles.headerTitle}>CLOS</Text>
+                  </View>
+            
       <View style={styles.header}>
         <Text style={styles.courseTitle}>{courseName}</Text>
         <Text style={styles.courseCode}>Course Code: {courseCode}</Text>
@@ -91,6 +95,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f9f9f9",
   },
+  header1:{backgroundColor:"#0f9d58",padding:16,paddingTop:40,borderBottomLeftRadius:18,borderBottomRightRadius:18},
+headerTitle:{color:"#fff",fontSize:30,fontWeight:"bold",textAlign:"center"},
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
