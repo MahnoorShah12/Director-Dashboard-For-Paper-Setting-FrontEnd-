@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
@@ -15,29 +16,116 @@ import { BASE_URL } from '../../../config/Api';
 
 
 const ViewCourses = ({ navigation }) => {
-  // ====== HOOKS (SIRF YAHAN) ======
-  const [courses, setCourses] = useState([]);
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
+ 
+
+
+   const [courses, setCourses] = useState([]);
+const [search, setSearch] = useState("");
+const [loading, setLoading] = useState(true);
+const [userId, setUserId] = useState(null);
+const [page, setPage] = useState(1);
+const [pageSize] = useState(10);
+const [totalCourses, setTotalCourses] = useState(0);
+
+useEffect(() => {
+  loadUser();
+}, []);
+
+// useEffect(() => {
+//   if (userId) {
+//     fetchCourses();
+//   }
+// }, [userId, search]);
+const debouncedSearch = useDebounce(search, 2000); // 500ms wait
+
+useEffect(() => {
+  if (userId) {
+    fetchCourses();  
+  }
+}, [userId, debouncedSearch]);
+
+// 🔹 Get userId from AsyncStorage
+const loadUser = async () => {
+  const id = await AsyncStorage.getItem("user_id");
+  setUserId(id);
+};
+
+
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+const fetchCourses = async (pageNumber = 1) => {
+  try {
+    setLoading(true);
+
+    let url = `${BASE_URL}/course/get_all_courses_of_Hod?userId=${userId}&page=${pageNumber}&pageSize=${pageSize}`;
+if (search.trim() !== "") {
+  url = `${BASE_URL}/course/searchForHod?search=${encodeURIComponent(search)}&userId=${userId}`;
+}
+
+    console.log("API URL:", url);
+
+    const res = await axios.get(url);
+
+    if (Array.isArray(res.data)) {
+      setCourses(res.data.slice(0, pageSize));
+      setTotalCourses(res.data.length);
+      setPage(1);
+    } 
+    else if (res.data?.data) {
+      setCourses(res.data.data);
+      setTotalCourses(res.data.total || res.data.data.length);
+      setPage(res.data.page || 1);
+    } 
+    else {
+      setCourses([]);
+      setTotalCourses(0);
+    }
+
+  } catch (error) {
+    console.log("Failed to load courses:", error);
+    setCourses([]);
+    setTotalCourses(0);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ====== FETCH COURSES ======
-  useEffect(() => {
-    fetchCourses();
-  }, []);
+  // useEffect(() => {
+  //   fetchCourses();
+  // }, []);
 
-  const fetchCourses = async () => {
-    try {
-      const res = await axios.get(
-        (`${BASE_URL}/course/get_all_courses?page=1&pageSize=1000`)
-      //   'http://192.168.137.1//fypProject/api/course/get_all_courses?page=1&pageSize=50'
-       );
-      setCourses(res.data.data || []);
-    } catch (e) { 
-      console.log('API error:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchCourses = async () => {
+  //   try {
+  //     const res = await axios.get(
+  //       (`${BASE_URL}/course/get_all_courses?page=1&pageSize=1000`)
+  //     //   'http://192.168.137.1//fypProject/api/course/get_all_courses?page=1&pageSize=50'
+  //      );
+  //     setCourses(res.data.data || []);
+  //   } catch (e) { 
+  //     console.log('API error:', e);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+//  
+  // useEffect(() => {
+  //   fetchCourses();
+  // }, [search]);
+
+
 
   // ====== SEARCH FILTER (NO HOOK HERE) ======
   const filteredCourses = courses.filter(item =>
@@ -139,6 +227,9 @@ const ViewCourses = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 20 }}
       />
+
+
+      
     </SafeAreaView>
   );
 };

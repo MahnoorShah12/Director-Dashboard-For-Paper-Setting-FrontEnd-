@@ -25,9 +25,12 @@ import  MySubjects from '../screens/FacultyMember/MySubjects';
 import  SubjectClo from '../screens/FacultyMember/Subjects/CLO';
 import  SubjectTopic from '../screens/FacultyMember/Subjects/Topic';
 
-;
 
-
+import CreatePaper from '../screens/FacultyMember/Subjects/Paper/CreatePaper';
+import CreateQuestion from '../screens/FacultyMember/Subjects/Paper/Question/CreateQuestion';
+import AssignQuestionModal from '../screens/FacultyMember/Subjects/Paper/Question/AssignQuestionModal';
+import CheckPolicyModal from '../screens/FacultyMember/Subjects/Paper/Question/CheckPolicyModal';
+import ReorderQuestionsModal from '../screens/FacultyMember/Subjects/Paper/Question/ReorderQuestionsModal';
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
@@ -57,7 +60,11 @@ const AppNavigator = () => {
                 <Stack.Screen name="MySubjects" component={MySubjects} />
                  <Stack.Screen name="ViewTopics" component={SubjectTopic } />
                        <Stack.Screen name="ViewCLOs" component={SubjectClo} />
-
+                         <Stack.Screen name="CreatePaper" component={CreatePaper} />
+                         <Stack.Screen name="CreateQuestion" component={CreateQuestion} />
+                             <Stack.Screen name="AssignQuestionModal" component={AssignQuestionModal} />
+                             <Stack.Screen name="CheckPolicyModal" component={CheckPolicyModal} />
+<Stack.Screen name="ReorderQuestionsModal" component={ReorderQuestionsModal} />
 
       </Stack.Navigator>
     </NavigationContainer>
