@@ -16,6 +16,7 @@ import {
   Platform,
   PermissionsAndroid,
   Dimensions,
+  FlatList, // Added FlatList
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -68,9 +69,15 @@ const CreatePaper = () => {
   const commentsScrollRef = useRef(null);
   const questionCommentsScrollRef = useRef(null);
   const [showPolicyModal, setShowPolicyModal] = useState(false);
+  
+  // New state to handle CLO Selection List
+  const [showCloListModal, setShowCloListModal] = useState(false); 
+  
   const [policyStatus, setPolicyStatus] = useState(null);
   const [isUserDirector, setIsUserDirector] = useState(false);
-  const baseUrl = "http://192.168.137.1/fypProject/";
+  
+  // Use HTTPS if necessary for local dev
+  const baseUrl = "https://localhost:44304/"; 
 
   useEffect(() => {
     if (showComments) fetchComments();
@@ -194,13 +201,18 @@ const CreatePaper = () => {
     fetchPaperDetails();
   }, [paperId]);
 
+  // Updated Fetch CLOs to map exactly like JS
   useEffect(() => {
     if (!courseId) return;
     const fetchCLOs = async () => {
       try {
         setLoadingClos(true);
         const response = await axios.get(`${BASE_URL}/clos/get_Clos/${courseId}`);
-        setClos(response.data || []);
+        const cloArray = response.data.map(clo => ({
+            Id: clo.id,
+            Title: clo.description
+        }));
+        setClos(cloArray);
         setLoadingClos(false);
       } catch (err) {
         setLoadingClos(false);
@@ -295,6 +307,7 @@ const CreatePaper = () => {
     });
   };
 
+  // Updated handleEditSubmit with proper FormData for Native
   const handleEditSubmit = async () => {
     try {
       const formDataToSend = new FormData();
@@ -304,22 +317,26 @@ const CreatePaper = () => {
         difficulty_level: editForm.difficulty,
         clo_id: editForm.cloId ? parseInt(editForm.cloId) : null,
       };
+
       if (editingIndex === "extra") {
         questionData.paper_id = paperDetails.PaperId;
         questionData.isextra = true;
       }
+
       formDataToSend.append("question", JSON.stringify(questionData));
+
       if (editForm.image) {
-        const file = {
+        formDataToSend.append("image", {
           uri: Platform.OS === "android" ? editForm.image.uri : editForm.image.uri.replace("file://", ""),
           name: editForm.image.fileName || "photo.jpg",
           type: editForm.image.type || "image/jpeg",
-        };
-        formDataToSend.append("image", file);
+        });
       }
+
       if (editForm.removeCurrentImage) {
         formDataToSend.append("removeImage", "true");
       }
+
       let response;
       if (editingIndex === "extra") {
         response = await axios.post(`${BASE_URL}/question/Create`, formDataToSend, {
@@ -393,15 +410,8 @@ const CreatePaper = () => {
   const requestImagePermission = async () => {
     if (Platform.OS !== "android") return true;
     try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        {
-          title: "Access Storage",
-          message: "App needs access to your photos to choose an image",
-          buttonPositive: "OK",
-        }
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
+        // Updated for modern Android permissions
+        return true; 
     } catch (e) {
       return false;
     }
@@ -732,12 +742,16 @@ const CreatePaper = () => {
                         />
                       </View>
 
+                      {/* Updated CLO Picker to open Modal */}
                       <View style={styles.formGroup}>
                         <Text style={styles.label}>CLO</Text>
                         {loadingClos ? (
                           <Text>Loading CLOs...</Text>
                         ) : (
-                          <TouchableOpacity style={styles.selectOption}>
+                          <TouchableOpacity 
+                            style={styles.selectOption}
+                            onPress={() => setShowCloListModal(true)}
+                          >
                             <Text>{editForm.cloId ? (clos.find((c) => c.Id === editForm.cloId)?.Title || editForm.cloId) : "Select CLO"}</Text>
                           </TouchableOpacity>
                         )}
@@ -813,9 +827,37 @@ const CreatePaper = () => {
           </View>
         </ScrollView>
 
+        {/* MODAL FOR CLO SELECTION (Native Picker Replacement) */}
+        <Modal visible={showCloListModal} transparent animationType="slide">
+            <View style={styles.modalOverlay}>
+                <View style={styles.cloModalContainer}>
+                    <Text style={styles.modalTitle}>Select CLO</Text>
+                    <FlatList
+                        data={clos}
+                        keyExtractor={item => item.Id.toString()}
+                        renderItem={({item}) => (
+                            <TouchableOpacity 
+                                style={styles.cloListItem}
+                                onPress={() => {
+                                    setEditForm(p => ({...p, cloId: item.Id}));
+                                    setShowCloListModal(false);
+                                }}
+                            >
+                                <Text>{item.Title}</Text>
+                            </TouchableOpacity>
+                        )}
+                    />
+                    <TouchableOpacity style={styles.closeBtn} onPress={() => setShowCloListModal(false)}>
+                        <Text>Close</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+
         <ReorderQuestionsModal visible={showReorderModal} questions={paperDetails.Questions} onClose={() => setShowReorderModal(false)} onSave={handleSaveReorder} />
         <AssignQuestionModal visible={showAssignQuestionModal} paperId={paperDetails.PaperId} selectedQuestionId={selectedQuestion?.Id} courseId={courseId} onClose={() => setShowAssignQuestionModal(false)} />
 
+        {/* PAPER COMMENTS MODAL */}
         <Modal visible={showComments} animationType="slide" transparent>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.commentsOverlay}>
             <View style={styles.commentsModal}>
@@ -843,6 +885,7 @@ const CreatePaper = () => {
           </KeyboardAvoidingView>
         </Modal>
 
+        {/* QUESTION COMMENTS MODAL */}
         <Modal visible={showQuestionComments} animationType="slide" transparent>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.commentsOverlay}>
             <View style={styles.commentsModal}>
@@ -905,28 +948,63 @@ const COLORS = {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.gray50 },
-  header: { padding: 16, backgroundColor: COLORS.primary50, alignItems: "center" },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: COLORS.gray900 },
+ container: { 
+  flex: 1, 
+  backgroundColor: COLORS.gray50,
+},
+
+paperContentContainer: { 
+  flexGrow: 1, 
+  paddingHorizontal: 12,   // 👈 thora kam padding
+  paddingTop: 10, 
+  paddingBottom: 24 
+},
+  header: { 
+  paddingVertical: 12,
+  backgroundColor: COLORS.primary50, 
+  alignItems: "center",
+  borderBottomWidth: 1,
+  borderColor: COLORS.gray200
+},
+
+headerTitle: { 
+  fontSize: 16,   // 👈 thora small
+  fontWeight: "700", 
+  color: COLORS.gray900 
+},
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   loadingText: { marginTop: 12 },
   paperContainer: { flex: 1, backgroundColor: COLORS.gray50 },
-  paperContentContainer: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 36 },
-  paperHeader: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: COLORS.gray200,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
+//   paperContentContainer: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 36 },
+//   paperHeader: {
+//     backgroundColor: "#fff",
+//     borderRadius: 20,
+//     padding: 20,
+//     marginBottom: 16,
+//     shadowColor: "#000",
+//     shadowOpacity: 0.05,
+//     shadowRadius: 6,
+//     elevation: 2,
+//     borderWidth: 1,
+//     borderColor: COLORS.gray200,
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     alignItems: "flex-start",
+//   },
+paperHeader: {
+  backgroundColor: "#fff",
+  borderRadius: 14,   // 👈 less radius
+  padding: 14,        // 👈 compact
+  marginBottom: 12,
+  shadowColor: "#000",
+  shadowOpacity: 0.04,
+  shadowRadius: 4,
+  elevation: 2,
+  borderWidth: 1,
+  borderColor: COLORS.gray200,
+  flexDirection: "column",   // 👈 mobile friendly
+  gap: 10
+},
   headerLeft: { flex: 1 },
   paperTitle: { fontSize: 24, fontWeight: "800", color: COLORS.gray900, marginBottom: 8 },
   paperMeta: { flexDirection: "row" },
@@ -947,22 +1025,40 @@ const styles = StyleSheet.create({
   clickableStatus: { backgroundColor: "#fef3c7" },
   directorApproveBtn: { backgroundColor: "#dcfce7", borderWidth: 1, borderColor: COLORS.primary500 },
   statusText: { fontWeight: "700" },
-  paperStats: { marginTop: 12, flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 12 },
-  statCard: {
-    width: "48%",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: COLORS.gray200,
-  },
+//   paperStats: { marginTop: 12, flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 12 },
+//   statCard: {
+//     width: "48%",
+//     backgroundColor: "#fff",
+//     borderRadius: 16,
+//     padding: 18,
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 12,
+//     shadowColor: "#000",
+//     shadowOpacity: 0.06,
+//     shadowRadius: 6,
+//     elevation: 2,
+//     borderWidth: 1,
+//     borderColor: COLORS.gray200,
+//   },
+paperStats: { 
+  marginTop: 10, 
+  flexDirection: "row", 
+  flexWrap: "wrap", 
+  justifyContent: "space-between", 
+},
+
+statCard: {
+  width: "100%",   // 👈 FULL WIDTH (mobile friendly)
+  backgroundColor: "#fff",
+  borderRadius: 12,
+  padding: 14,
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 10,
+  borderWidth: 1,
+  borderColor: COLORS.gray200,
+},
   statIcon: { fontSize: 24, width: 48, height: 48, textAlign: "center" },
   statInfo: {},
   statLabel: { fontSize: 12, color: COLORS.gray500 },
@@ -970,17 +1066,56 @@ const styles = StyleSheet.create({
   headerActions: { justifyContent: "center" },
   commentBtn: { flexDirection: "row", alignItems: "center" },
   commentText: { marginLeft: 8 },
-  questionTabs: { marginTop: 12, padding: 6, borderRadius: 14, backgroundColor: COLORS.gray50, borderWidth: 1, borderColor: COLORS.gray200 },
+//   questionTabs: { marginTop: 12, padding: 6, borderRadius: 14, backgroundColor: COLORS.gray50, borderWidth: 1, borderColor: COLORS.gray200 },
   questionTabsContent: { alignItems: "center" },
-  tabBtn: { paddingHorizontal: 18, paddingVertical: 10, marginRight: 8, backgroundColor: "transparent", borderRadius: 10 },
-  tabText: { color: COLORS.gray600, fontWeight: "700" },
-  tabActive: { backgroundColor: "#fff", borderWidth: 1, borderColor: COLORS.primary200 },
+//   tabBtn: { paddingHorizontal: 18, paddingVertical: 10, marginRight: 8, backgroundColor: "transparent", borderRadius: 10 },
+//   tabText: { color: COLORS.gray600, fontWeight: "700" },
+//   tabActive: { backgroundColor: "#fff", borderWidth: 1, borderColor: COLORS.primary200 },
+questionTabs: { 
+  marginTop: 10, 
+  paddingVertical: 6,
+  borderRadius: 10, 
+  backgroundColor: "#fff",
+  borderWidth: 1, 
+  borderColor: COLORS.gray200 
+},
+
+tabBtn: { 
+  paddingHorizontal: 14, 
+  paddingVertical: 8, 
+  marginRight: 6, 
+  borderRadius: 8 
+},
+
+tabText: { 
+  fontSize: 13,   // 👈 smaller text
+  color: COLORS.gray600, 
+  fontWeight: "600" 
+},
+
+tabActive: { 
+  backgroundColor: COLORS.primary100 
+},
   extraQuestionTab: { backgroundColor: "#fff2b0" },
   totalQuestions: { alignSelf: "center", marginLeft: 8, backgroundColor: "#fff", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: COLORS.gray200 },
   questionsGrid: { marginTop: 12 },
-  questionCard: { borderRadius: 20, overflow: "hidden", backgroundColor: "#fff", borderWidth: 1, borderColor: COLORS.gray200, paddingBottom: 12 },
+//   questionCard: { borderRadius: 20, overflow: "hidden", backgroundColor: "#fff", borderWidth: 1, borderColor: COLORS.gray200, paddingBottom: 12},
   editingCard: { borderWidth: 2, borderColor: COLORS.primary500 },
-  questionCardHeader: { padding: 16, backgroundColor: COLORS.gray50, borderBottomWidth: 1, borderColor: COLORS.gray200, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+//   questionCardHeader: { padding: 16, backgroundColor: COLORS.gray50, borderBottomWidth: 1, borderColor: COLORS.gray200, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+questionCard: { 
+  borderRadius: 14, 
+  backgroundColor: "#fff", 
+  borderWidth: 1, 
+  borderColor: COLORS.gray200, 
+  marginTop: 10
+},
+
+questionCardHeader: { 
+  padding: 12, 
+  backgroundColor: COLORS.gray50, 
+  flexDirection: "column",   // 👈 mobile fix
+  gap: 8
+},
   questionNumber: { fontWeight: "800", color: COLORS.primary700, backgroundColor: "#fff", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: COLORS.primary200 },
   leftActions: { flexDirection: "row", alignItems: "center", gap: 8 },
   editButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: "#fff", borderWidth: 1, borderColor: COLORS.gray200 },
@@ -989,8 +1124,23 @@ const styles = StyleSheet.create({
   editForm: { padding: 20, backgroundColor: "#fff" },
   formGroup: { marginBottom: 16 },
   label: { fontSize: 14, fontWeight: "700", color: COLORS.gray700, marginBottom: 8 },
-  textarea: { borderWidth: 2, borderColor: COLORS.gray200, borderRadius: 12, padding: 12, minHeight: 100, textAlignVertical: "top" },
-  input: { borderWidth: 2, borderColor: COLORS.gray200, borderRadius: 12, padding: 10, width: 120 },
+//   textarea: { borderWidth: 2, borderColor: COLORS.gray200, borderRadius: 12, padding: 12, minHeight: 100, textAlignVertical: "top" },
+//   input: { borderWidth: 2, borderColor: COLORS.gray200, borderRadius: 12, padding: 10, width: 120 },
+input: { 
+  borderWidth: 1.5, 
+  borderColor: COLORS.gray300, 
+  borderRadius: 10, 
+  padding: 10, 
+  width: "100%"   // 👈 fix width
+},
+
+textarea: { 
+  borderWidth: 1.5, 
+  borderColor: COLORS.gray300, 
+  borderRadius: 10, 
+  padding: 10, 
+  minHeight: 90 
+},
   formRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
   difficultySelector: { flexDirection: "row", gap: 12 },
   difficultyBtn: { padding: 12, borderWidth: 2, borderColor: COLORS.gray200, borderRadius: 12 },
@@ -1005,13 +1155,32 @@ const styles = StyleSheet.create({
   uploadLabelText: { color: "#fff", fontWeight: "700" },
   uploadHint: { color: COLORS.gray500 },
   editActions: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 12 },
-  cancelBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, backgroundColor: "#fff", borderWidth: 2, borderColor: COLORS.gray300 },
-  saveBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, backgroundColor: COLORS.primary600 },
-  saveText: { color: "#fff", fontWeight: "700" },
+//   cancelBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, backgroundColor: "#fff", borderWidth: 2, borderColor: COLORS.gray300 },
+//   saveBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, backgroundColor: COLORS.primary600 },
+  saveBtn: { 
+  paddingVertical: 12, 
+  borderRadius: 10, 
+  backgroundColor: COLORS.primary600,
+  alignItems: "center"
+},
+
+cancelBtn: { 
+  paddingVertical: 12, 
+  borderRadius: 10, 
+  borderWidth: 1, 
+  borderColor: COLORS.gray300,
+  alignItems: "center"
+},
+saveText: { color: "#fff", fontWeight: "700" },
   questionContent: { padding: 20 },
   questionText: { fontSize: 16, lineHeight: 22, color: COLORS.gray800, marginBottom: 12 },
   questionImageContainer: { marginVertical: 12, borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: COLORS.gray200, backgroundColor: COLORS.gray50 },
-  questionImage: { width: "100%", height: Math.round(SCREEN_WIDTH * 0.45), resizeMode: "cover" },
+//   questionImage: { width: "100%", height: Math.round(SCREEN_WIDTH * 0.45), resizeMode: "cover" },
+questionImage: { 
+  width: "100%", 
+  height: 180,   // 👈 fixed height (better than dynamic)
+  resizeMode: "cover" 
+},
   questionTags: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
   tag: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: COLORS.gray100 },
   marksTag: { backgroundColor: COLORS.primary50 },
@@ -1029,32 +1198,47 @@ const styles = StyleSheet.create({
   notificationClose: { marginLeft: 8, fontSize: 18 },
   successNotif: { borderLeftWidth: 4, borderLeftColor: COLORS.success },
   errorNotif: { borderLeftWidth: 4, borderLeftColor: COLORS.error },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" },
   modalContainer: { width: "92%", maxHeight: "80%", backgroundColor: "#fff", borderRadius: 12, overflow: "hidden" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 12, backgroundColor: COLORS.primary600 },
-  modalTitle: { color: "#fff", fontWeight: "800" },
-  modalClose: { color: "#fff", fontWeight: "700" },
+  modalTitle: { color: "#fff", fontWeight: "800", fontSize: 18 },
+  modalClose: { color: "#fff", fontWeight: "700", fontSize: 20 },
   modalBody: { padding: 12 },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", padding: 12 },
   modalBtn: { padding: 10, borderRadius: 8, backgroundColor: "#f3f4f6" },
   primaryBtn: { backgroundColor: COLORS.primary600 },
   primaryBtnText: { color: "#fff" },
-  commentsOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" },
-  commentsModal: { width: "92%", maxHeight: "80%", backgroundColor: "#fff", borderRadius: 12, overflow: "hidden", alignSelf: "center" },
-  commentsHeader: { padding: 12, backgroundColor: COLORS.primary700, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  commentsOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" },
+//   commentsModal: { width: "92%", maxHeight: "80%", backgroundColor: "#fff", borderRadius: 20, overflow: "hidden", alignSelf: "center" },
+commentsModal: { 
+  width: "95%", 
+  maxHeight: "85%", 
+  borderRadius: 16 
+},
+
+commentInput: { 
+  flex: 1, 
+  minHeight: 40, 
+  borderRadius: 20,
+  paddingHorizontal: 12
+},
+  commentsHeader: { padding: 16, backgroundColor: COLORS.primary700, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   commentsTitle: { color: "#fff", fontWeight: "800" },
   commentsBody: { padding: 12, backgroundColor: COLORS.primary50, maxHeight: 420 },
-  commentItem: { maxWidth: "75%", padding: 10, borderRadius: 18, marginBottom: 8 },
+  commentItem: { maxWidth: "85%", padding: 12, borderRadius: 18, marginBottom: 10 },
   sent: { backgroundColor: "#bbf7d0", alignSelf: "flex-end" },
   received: { backgroundColor: "#e6f4ea", alignSelf: "flex-start" },
-  commentUser: { fontWeight: "700", fontSize: 12, marginBottom: 4, color: COLORS.primary700 },
-  commentText: { fontSize: 14 },
-  commentDate: { fontSize: 11, color: COLORS.gray500, marginTop: 6 },
-  commentsFooter: { padding: 12, backgroundColor: COLORS.primary50, flexDirection: "row", gap: 8, alignItems: "center" },
-  commentInput: { flex: 1, minHeight: 40, borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 12, padding: 8, backgroundColor: "#fff" },
-  sendBtn: { padding: 10, backgroundColor: COLORS.primary700, borderRadius: 12 },
+  commentUser: { fontWeight: "700", fontSize: 13, marginBottom: 4, color: COLORS.primary700 },
+  commentText: { fontSize: 14, color: COLORS.gray800 },
+  commentDate: { fontSize: 11, color: COLORS.gray500, marginTop: 6, textAlign: 'right' },
+  commentsFooter: { padding: 16, backgroundColor: "#fff", flexDirection: "row", gap: 10, alignItems: "center", borderTopWidth: 1, borderColor: COLORS.gray200 },
+//   commentInput: { flex: 1, minHeight: 45, borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 25, paddingHorizontal: 15, paddingVertical: 10, backgroundColor: COLORS.gray50 },
+  sendBtn: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: COLORS.primary700, borderRadius: 25 },
   sendBtnText: { color: "#fff", fontWeight: "700" },
-  noComments: { color: COLORS.gray500, textAlign: "center" },
-  reorderRow: { padding: 12, borderBottomWidth: 1, borderColor: COLORS.gray200 },
-  reorderText: {},
+  noComments: { color: COLORS.gray500, textAlign: "center", marginTop: 20 },
+  
+  // Custom Styles for CLO Modal
+  cloModalContainer: { width: "85%", backgroundColor: "#fff", borderRadius: 20, padding: 20, maxHeight: "70%" },
+  cloListItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: COLORS.gray100 },
+  closeBtn: { marginTop: 15, backgroundColor: COLORS.primary600, padding: 12, borderRadius: 10, alignItems: 'center' },
 });
