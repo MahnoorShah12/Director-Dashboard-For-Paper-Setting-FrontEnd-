@@ -704,7 +704,7 @@ const CreatePaper = () => {
                         }}
                       >
                         <Text>📝</Text>
-                        <Text style={styles.commentText}>Question Comments</Text>
+                        <Text style={styles.commentText}>Comments</Text>
                       </TouchableOpacity>
                     )}
 
@@ -959,19 +959,22 @@ paperContentContainer: {
   paddingTop: 10, 
   paddingBottom: 24 
 },
-  header: { 
-  paddingVertical: 12,
-  backgroundColor: COLORS.primary50, 
-  alignItems: "center",
-  borderBottomWidth: 1,
-  borderColor: COLORS.gray200
+  header: {
+  backgroundColor: '#0B8F5A',
+  padding: 16,
+  flexDirection: 'row',
+  justifyContent: 'center', // center items horizontally
+  alignItems: 'center',
+  position: 'relative',      // optional if you have absolute buttons
+},
+headerTitle: {
+  color: 'white',
+  fontSize: 30,
+  fontWeight: 'bold',
+  textAlign: 'center',      // ensures text itself is centered
+  flex: 1,                  // takes available space
 },
 
-headerTitle: { 
-  fontSize: 16,   // 👈 thora small
-  fontWeight: "700", 
-  color: COLORS.gray900 
-},
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   loadingText: { marginTop: 12 },
   paperContainer: { flex: 1, backgroundColor: COLORS.gray50 },
@@ -1041,23 +1044,41 @@ paperHeader: {
 //     borderWidth: 1,
 //     borderColor: COLORS.gray200,
 //   },
+// paperStats: { 
+//   marginTop: 10, 
+//   flexDirection: "row", 
+//   flexWrap: "wrap", 
+//   justifyContent: "space-between", 
+// },
+
+// statCard: {
+//   width: "100%",   // 👈 FULL WIDTH (mobile friendly)
+//   backgroundColor: "#fff",
+//   borderRadius: 12,
+//   padding: 14,
+//   flexDirection: "row",
+//   alignItems: "center",
+//   marginBottom: 10,
+//   borderWidth: 1,
+//   borderColor: COLORS.gray200,
+// },
 paperStats: { 
   marginTop: 10, 
   flexDirection: "row", 
   flexWrap: "wrap", 
-  justifyContent: "space-between", 
+  justifyContent: "space-between",
 },
 
 statCard: {
-  width: "100%",   // 👈 FULL WIDTH (mobile friendly)
+  width: "48%",   // 🔥 2 cards in one row
   backgroundColor: "#fff",
-  borderRadius: 12,
-  padding: 14,
-  flexDirection: "row",
-  alignItems: "center",
+  borderRadius: 10,
+  paddingVertical: 12,
+  paddingHorizontal: 10,
   marginBottom: 10,
   borderWidth: 1,
   borderColor: COLORS.gray200,
+  alignItems: "center",   // 🔥 center content
 },
   statIcon: { fontSize: 24, width: 48, height: 48, textAlign: "center" },
   statInfo: {},
@@ -1117,10 +1138,94 @@ questionCardHeader: {
   gap: 8
 },
   questionNumber: { fontWeight: "800", color: COLORS.primary700, backgroundColor: "#fff", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: COLORS.primary200 },
-  leftActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-  editButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: "#fff", borderWidth: 1, borderColor: COLORS.gray200 },
-  deleteButton: { backgroundColor: COLORS.error, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
-  deleteButtonText: { color: "#fff" },
+//   leftActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+//   editButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: "#fff", borderWidth: 1, borderColor: COLORS.gray200 },
+//   // deleteButton: { backgroundColor: COLORS.error, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+//   // deleteButtonText: { color: "#fff" },
+//  deleteButton: {
+//   backgroundColor: 'red',   // red button
+//   paddingHorizontal: 12,
+//   paddingVertical: 6,
+//   borderRadius: 6,
+//   alignItems: 'center',
+//   justifyContent: 'center',
+//   marginLeft: 10,           // spacing from other buttons
+//   minWidth: 70,             // ensures button isn't too narrow
+//   height: 35,               // consistent height
+// },
+// deleteButtonText: {
+//   color: '#fff',            // white text
+//   fontWeight: 'bold',
+//   fontSize: 14,
+//   textAlign: 'center',
+// },
+
+
+
+  // leftActions: {
+  //   flexDirection: "row",
+  //   marginVertical: 8,
+  //   paddingHorizontal: 4,
+  // },
+  leftActions: {
+  flexDirection: "row",
+  flexWrap: "wrap",   // 👈 IMPORTANT
+  gap: 8,
+  marginTop: 6,
+},
+
+  editButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#60a5fa",
+    borderRadius: 6,
+    marginRight: 8,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  editButtonText: {
+    color: "#fff",
+    fontWeight: "500",
+  },
+  reorderBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#34d399",
+    borderRadius: 6,
+    marginRight: 8,
+    minWidth: 120,
+    alignItems: "center",
+  },
+  reorderTextBtn: {
+    color: "#fff",
+    fontWeight: "500",
+  },
+  commentBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#fbbf24",
+    borderRadius: 6,
+    marginRight: 8,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  commentText: {
+    color: "#fff",
+    fontWeight: "500",
+    marginLeft: 4,
+  },
+  deleteButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#ef4444",
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  deleteButtonText: {
+    color: "#fff",
+    fontWeight: "500",
+  },
+
   editForm: { padding: 20, backgroundColor: "#fff" },
   formGroup: { marginBottom: 16 },
   label: { fontSize: 14, fontWeight: "700", color: COLORS.gray700, marginBottom: 8 },
