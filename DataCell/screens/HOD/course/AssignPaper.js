@@ -1,4 +1,4 @@
- import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,11 @@ import {
 } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
 import { BASE_URL } from "../../../config/Api";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // For user role storage
 
 export default function AssignPaper({ navigation }) {
   const [sessions, setSessions] = useState([]);
   const [courses, setCourses] = useState([]);
-
   const [selectedSession, setSelectedSession] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
@@ -25,67 +25,115 @@ export default function AssignPaper({ navigation }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  /* ================= FETCH SESSIONS ================= */
+  const [userId, setUserId] = useState(null);
+  const [roles, setRoles] = useState([]);
+
+  // ================= ROLE CHECK =================
   useEffect(() => {
+    const checkRole = async () => {
+      try {
+        const storedUserId = await AsyncStorage.getItem("user_id");
+        const storedRoles = JSON.parse(
+          (await AsyncStorage.getItem("user_roles")) || "[]"
+        ).map((r) => r.toLowerCase());
+
+        setUserId(storedUserId);
+        setRoles(storedRoles);
+
+        if (!storedRoles.includes("hod") && !storedRoles.includes("datacell")) {
+          navigation.replace("Login"); // redirect to login if role invalid
+        }
+      } catch (err) {
+        Alert.alert("Error", "Unable to validate user role");
+      }
+    };
+    checkRole();
+  }, [navigation]);
+
+  // ================= FETCH SESSIONS =================
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/session/get_all_sessions`);
+        const data = await res.json();
+        setSessions(data);
+      } catch (err) {
+        setError("Unable to load sessions.");
+      }
+    };
     fetchSessions();
   }, []);
 
-  const fetchSessions = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/session/get_all_sessions`);
-      const data = await res.json();
-      setSessions(data);
-    } catch (err) {
-      Alert.alert("Error", "Failed to load sessions");
-    }
-  };
-
-  /* ================= FETCH COURSES ================= */
+  // ================= FETCH COURSES =================
   useEffect(() => {
-    if (!selectedSession) {
+    if (!selectedSession || !userId) {
       setCourses([]);
       setSelectedCourse(null);
       setSelectedTeacher(null);
       return;
     }
-
     fetchCourses();
-  }, [selectedSession]);
+  }, [selectedSession, userId]);
 
   const fetchCourses = async () => {
     try {
       setLoadingCourses(true);
+      setError("");
+      setSuccess("");
 
       const res = await fetch(
-        `${BASE_URL}/AssignPaper/search?sessionId=${selectedSession}`
+        `${BASE_URL}/AssignPaper/search_by_hod?userId=${userId}&sessionId=${selectedSession}`
       );
-
       const data = await res.json();
 
-      const formatted = data.map((c) => ({
+      const formatted = (data?.data || []).map((c) => ({
         label: c.CourseName,
         value: c.CourseId,
-        teachers: c.Teachers.map((t) => ({
+        teachers: (c.Teachers || []).map((t) => ({
           id: t.TeacherId,
           name: t.TeacherName,
-          assigned: t.Assigned || false, // 👈 Add assigned flag
         })),
+        assignedTeacherId:
+          c.AssignTeacher && c.AssignTeacher.length > 0
+            ? c.AssignTeacher[0].TeacherId
+            : null,
       }));
 
       setCourses(formatted);
       setSelectedCourse(null);
       setSelectedTeacher(null);
     } catch (err) {
-      Alert.alert("Error", "Failed to load courses");
+      setError("Unable to load courses.");
     } finally {
       setLoadingCourses(false);
     }
   };
 
-  /* ================= ASSIGN PAPER ================= */
+  // ================= HANDLE COURSE CHANGE =================
+  const handleCourseChange = (courseValue) => {
+    const course = courses.find((c) => c.value === courseValue) || null;
+    setSelectedCourse(course);
+    setSelectedTeacher(null);
+
+    if (course?.assignedTeacherId) {
+      const valid = course.teachers.some(
+        (t) => t.id === course.assignedTeacherId
+      );
+      if (valid) {
+        setSelectedTeacher(course.assignedTeacherId);
+      }
+    }
+  };
+
+  // ================= HANDLE TEACHER SELECT =================
+  const handleTeacherSelect = (teacherId) => {
+    setSelectedTeacher((prev) => (prev === teacherId ? null : teacherId));
+  };
+
+  // ================= ASSIGN PAPER =================
   const handleAssign = async () => {
     if (!selectedSession || !selectedCourse || !selectedTeacher) {
-      setError("Please select session, course and teacher");
+      setError("Please select session, course, and teacher");
       setSuccess("");
       return;
     }
@@ -97,9 +145,7 @@ export default function AssignPaper({ navigation }) {
 
       const res = await fetch(`${BASE_URL}/AssignPaper/assign`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           CourseId: selectedCourse.value,
           TeacherId: selectedTeacher,
@@ -109,19 +155,18 @@ export default function AssignPaper({ navigation }) {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        const message =
-          data?.Message ||
-          "This teacher is already assigned to this course. Please choose another.";
-        Alert.alert("Notice", message);
-        return;
+      // Show alert and success message in UI
+      if (data?.Message) {
+        setSuccess(data.Message);
+        Alert.alert("Success", data.Message);
+      } else {
+        setSuccess("Teacher assigned successfully!");
+        Alert.alert("Success", "Teacher assigned successfully!");
       }
 
-      setSuccess(data.Message || "Teacher assigned successfully!");
-      // Refresh courses so assigned flag updates
-      fetchCourses();
+      fetchCourses(); // refresh courses to update assigned teacher
     } catch (err) {
-      Alert.alert("Error", "Failed to assign paper. Please try again.");
+      setError("Failed to assign paper. Please try again.");
     } finally {
       setLoadingAssign(false);
     }
@@ -131,12 +176,12 @@ export default function AssignPaper({ navigation }) {
     <View style={{ flex: 1, backgroundColor: "#0B8F5A" }}>
       {/* HEADER */}
       <View style={styles.header}>
-              <TouchableOpacity onPress={() => navigation.goBack()}>
-                <Text style={styles.back}>{'<'}</Text>
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>Assign  Paper</Text>
-              <View style={{ width: 24 }} />
-            </View>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.back}>{"<"}</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Assign Paper</Text>
+        <View style={{ width: 24 }} />
+      </View>
 
       {/* BODY */}
       <ScrollView style={styles.body}>
@@ -164,13 +209,10 @@ export default function AssignPaper({ navigation }) {
           valueField="value"
           placeholder={loadingCourses ? "Loading..." : "Select course"}
           value={selectedCourse?.value}
-          onChange={(item) => {
-            setSelectedCourse(item);
-            setSelectedTeacher(null);
-          }}
+          onChange={(item) => handleCourseChange(item.value)}
         />
 
-        {/* COURSE NAME BOX */}
+        {/* COURSE NAME */}
         {selectedCourse && (
           <>
             <Text style={styles.sectionTitle}>Course Name</Text>
@@ -180,26 +222,33 @@ export default function AssignPaper({ navigation }) {
           </>
         )}
 
-        {/* TEACHER RADIO LIST */}
+        {/* TEACHER LIST */}
         {selectedCourse && selectedCourse.teachers.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>Select Teacher</Text>
-
             {selectedCourse.teachers.map((t) => (
               <TouchableOpacity
                 key={t.id}
                 style={[
                   styles.radioRow,
-                  t.assigned && { opacity: 0.5 }, // 👈 disable look
+                  selectedCourse.assignedTeacherId === t.id && {
+                    opacity: 0.5,
+                  },
                 ]}
-                onPress={() => !t.assigned && setSelectedTeacher(t.id)}
-                disabled={t.assigned} // 👈 can't select already assigned
+                onPress={() =>
+                  selectedCourse.assignedTeacherId !== t.id &&
+                  handleTeacherSelect(t.id)
+                }
+                disabled={selectedCourse.assignedTeacherId === t.id}
               >
                 <View style={styles.radioOuter}>
                   {selectedTeacher === t.id && <View style={styles.radioInner} />}
                 </View>
                 <Text style={styles.teacherName}>
-                  {t.name} {t.assigned ? "(Already Assigned)" : ""}
+                  {t.name}{" "}
+                  {selectedCourse.assignedTeacherId === t.id
+                    ? "(Already Assigned)"
+                    : ""}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -224,28 +273,25 @@ export default function AssignPaper({ navigation }) {
 }
 
 const styles = StyleSheet.create({
- header: {
-    backgroundColor: '#0B8F5A',
+  header: {
+    backgroundColor: "#0B8F5A",
     padding: 18,
     borderBottomLeftRadius: 18,
     borderBottomRightRadius: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-
   back: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 26,
-    fontWeight: '700',
+    fontWeight: "700",
   },
-
   headerTitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
   },
-
   body: {
     flex: 1,
     backgroundColor: "#F4F4F4",
@@ -327,4 +373,4 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
   },
-}); 
+});

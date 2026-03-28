@@ -137,17 +137,26 @@ export default function CheckPolicyModal({
       paperDetails?.PaperStatus !== "Policy Fulfilled"
     ) {
       const updateStatus = async () => {
-        try {
-          await axios.post(`${BASE_URL}/paper/updateStatus/${paperDetails?.PaperId}`, {
-            status: "Policy Fulfilled",
-          });
-          setStatusUpdated(true);
-          if (onPolicyCheck) onPolicyCheck(true);
-        } catch (err) {
-          console.error("Failed to update paper status:", err);
-        }
-      };
-      updateStatus();
+  try {
+    const response = await axios.post(`${BASE_URL}/paper/updateStatus/${paperDetails?.PaperId}`, {
+      status: "Policy Fulfilled"
+    });
+    // Optionally update local state
+    setPaperDetails(prev => ({
+      ...prev,
+      PaperStatus: response.data?.PaperStatus || "Policy Fulfilled"
+    }));
+    setMessage("Paper status updated successfully!");
+    setMessageType("success");
+    setTimeout(() => {
+      setMessage("");
+      setMessageType("");
+    }, 3000);
+  } catch (error) {
+    setMessage("Failed to update paper status.");
+    setMessageType("error");
+  }
+};
     }
   }, [isFullyFulfilled, loading, policy, statusUpdated, paperDetails, onPolicyCheck]);
 

@@ -31,6 +31,7 @@ import CreateQuestion from '../screens/FacultyMember/Subjects/Paper/Question/Cre
 import AssignQuestionModal from '../screens/FacultyMember/Subjects/Paper/Question/AssignQuestionModal';
 import CheckPolicyModal from '../screens/FacultyMember/Subjects/Paper/Question/CheckPolicyModal';
 import ReorderQuestionsModal from '../screens/FacultyMember/Subjects/Paper/Question/ReorderQuestionsModal';
+import CurrentPapers from '../screens/Director/CurrentPapers';
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
@@ -56,6 +57,8 @@ const AppNavigator = () => {
                {/* director */}
                <Stack.Screen name="DutySwitch" component={DutySwitch}  />
                 <Stack.Screen name="VettingAlerts" component={VettingAlerts}  />
+              <Stack.Screen name="CurrentPapers" component={CurrentPapers} />
+{/* <Stack.Screen name="PastPapers" component={PastPapers} /> */}
                 {/* {FacultyMember} */}
                 <Stack.Screen name="MySubjects" component={MySubjects} />
                  <Stack.Screen name="ViewTopics" component={SubjectTopic } />

@@ -376,8 +376,14 @@ const DashboardScreen = ({ navigation }) => {
           {roles.includes('director') && (
             <>
               <Text style={styles.section}>Director Panel</Text>
-              <Button title="Current Papers" />
-              <Button title="Past Papers" />
+            <Button 
+  title="Current Papers" 
+  onPress={() => navigation.navigate('CurrentPapers')}  
+/>
+    <Button 
+      title="Past Papers" 
+      onPress={() => navigation.navigate('PastPapers')} 
+    />
               <Button title="Paper Submission Plan" onPress={() => navigation.navigate('VettingAlerts')} />
               <Button title="Role Handover" onPress={() => navigation.navigate('DutySwitch')} />
             </>
