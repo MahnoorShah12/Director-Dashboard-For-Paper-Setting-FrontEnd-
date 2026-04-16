@@ -8,9 +8,9 @@ import {
   ScrollView,
   Dimensions,
   Platform,
-  SafeAreaView
+ 
 } from "react-native";
-
+import { SafeAreaView } from "react-native-safe-area-context";
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const ReorderQuestionsModal = ({ visible, questions, onClose, onSave }) => {

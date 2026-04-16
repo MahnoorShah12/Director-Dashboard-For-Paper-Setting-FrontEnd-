@@ -308,7 +308,7 @@ const DashboardScreen = ({ navigation }) => {
         console.log("Fetching courses for ID:", storedID);
 
         const response = await fetch(
-          `http://192.168.137.1/fypProject/api/paper/Get_Teacher_Courses/${storedID}`
+          `http://192.168.31.125/fypProject/api/paper/Get_Teacher_Courses/${storedID}`
         );
 
         const data = await response.json();

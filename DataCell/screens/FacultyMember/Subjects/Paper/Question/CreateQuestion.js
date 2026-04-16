@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import {
-  SafeAreaView,
+ 
   KeyboardAvoidingView,
   View,
   Text,
@@ -18,6 +18,8 @@ import {
   Dimensions,
   FlatList, // Added FlatList
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { launchImageLibrary } from "react-native-image-picker";
@@ -28,7 +30,7 @@ import { BASE_URL } from "../../../../../config/Api";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-const CreatePaper = () => {
+const CreateQuestion = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const paperId = route?.params?.paperId;
@@ -919,7 +921,7 @@ const CreatePaper = () => {
   );
 };
 
-export default CreatePaper;
+export default CreateQuestion;
 
 const COLORS = {
   primary50: "#f0fdf4",
