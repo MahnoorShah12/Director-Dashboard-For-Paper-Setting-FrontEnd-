@@ -110,21 +110,35 @@ export default function AssignPaper({ navigation }) {
   };
 
   // ================= HANDLE COURSE CHANGE =================
-  const handleCourseChange = (courseValue) => {
-    const course = courses.find((c) => c.value === courseValue) || null;
-    setSelectedCourse(course);
-    setSelectedTeacher(null);
+  // const handleCourseChange = (courseValue) => {
+  //   const course = courses.find((c) => c.value === courseValue) || null;
+  //   setSelectedCourse(course);
+  //   setSelectedTeacher(null);
 
-    if (course?.assignedTeacherId) {
-      const valid = course.teachers.some(
-        (t) => t.id === course.assignedTeacherId
-      );
-      if (valid) {
-        setSelectedTeacher(course.assignedTeacherId);
-      }
+  //   if (course?.assignedTeacherId) {
+  //     const valid = course.teachers.some(
+  //       (t) => t.id === course.assignedTeacherId
+  //     );
+  //     if (valid) {
+  //       setSelectedTeacher(course.assignedTeacherId);
+  //     }
+  //   }
+  // };
+
+  const handleCourseChange = (course) => {
+  const selected = courses.find((c) => c.value === course.value);
+  setSelectedCourse(selected || null);
+  setSelectedTeacher(null);
+
+  if (selected?.assignedTeacherId) {
+    const valid = selected.teachers.some(
+      (t) => t.id === selected.assignedTeacherId
+    );
+    if (valid) {
+      setSelectedTeacher(selected.assignedTeacherId);
     }
-  };
-
+  }
+};
   // ================= HANDLE TEACHER SELECT =================
   const handleTeacherSelect = (teacherId) => {
     setSelectedTeacher((prev) => (prev === teacherId ? null : teacherId));
@@ -198,20 +212,22 @@ export default function AssignPaper({ navigation }) {
           placeholder="Select session"
           value={selectedSession}
           onChange={(item) => setSelectedSession(item.id)}
+            maxHeight={300} 
         />
 
         {/* COURSE DROPDOWN */}
         <Text style={styles.sectionTitle}>Select Course</Text>
-        <Dropdown
-          style={styles.dropdown}
-          data={courses}
-          labelField="label"
-          valueField="value"
-          placeholder={loadingCourses ? "Loading..." : "Select course"}
-          value={selectedCourse?.value}
-          onChange={(item) => handleCourseChange(item.value)}
-        />
-
+      <Dropdown
+  style={styles.dropdown}
+  data={courses}
+  labelField="label"
+  valueField="value"
+  value={selectedCourse?.value}
+  search
+  searchPlaceholder="Search course..."
+  maxHeight={350}
+  onChange={(item) => handleCourseChange(item)}
+/>
         {/* COURSE NAME */}
         {selectedCourse && (
           <>

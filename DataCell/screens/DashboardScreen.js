@@ -308,7 +308,7 @@ const DashboardScreen = ({ navigation }) => {
         console.log("Fetching courses for ID:", storedID);
 
         const response = await fetch(
-          `http://192.168.31.125/fypProject/api/paper/Get_Teacher_Courses/${storedID}`
+          `http://192.168.137.1/fypProject/api/paper/Get_Teacher_Courses/${storedID}`
         );
 
         const data = await response.json();
@@ -382,7 +382,7 @@ const DashboardScreen = ({ navigation }) => {
 />
     <Button 
       title="Past Papers" 
-      onPress={() => navigation.navigate('PastPapers')} 
+      onPress={() => navigation.navigate('PastPaper')} 
     />
               <Button title="Paper Submission Plan" onPress={() => navigation.navigate('VettingAlerts')} />
               <Button title="Role Handover" onPress={() => navigation.navigate('DutySwitch')} />

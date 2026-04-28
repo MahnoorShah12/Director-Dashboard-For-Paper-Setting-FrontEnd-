@@ -12,6 +12,7 @@ import EditFaculty from '../screens/Faculty/EditFaculty';
 import AddCourse from '../screens/Courses/AddCourse';
 import EditCourse from '../screens/Courses/EditCourse';
 import AssignCourse from '../screens/Courses/AssignCourse';
+import PaperVerification from '../screens/Courses/PaperVerification';
 //import ViewFaculty from '../screens/HOD/faculty/ViewFaculty';
 import ViewFaculty from '../screens/HOD/faculty/ViewFaculty';
 import ViewCourse from '../screens/HOD/course/ViewCourses';
@@ -33,6 +34,9 @@ import AssignQuestionModal from '../screens/FacultyMember/Subjects/Paper/Questio
 import CheckPolicyModal from '../screens/FacultyMember/Subjects/Paper/Question/CheckPolicyModal';
 import ReorderQuestionsModal from '../screens/FacultyMember/Subjects/Paper/Question/ReorderQuestionsModal';
 import CurrentPapers from '../screens/Director/CurrentPapers';
+import PastPaper from '../screens/Director/PastPaper';
+import PastPaperView from '../screens/Director/PastPaperView';
+
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
@@ -46,6 +50,8 @@ const AppNavigator = () => {
         <Stack.Screen name="EditFaculty" component={EditFaculty} />
         <Stack.Screen name="AddCourse" component={AddCourse} />
         <Stack.Screen name="EditCourse" component={EditCourse} />
+         <Stack.Screen name="PaperVerification" component={PaperVerification} />
+
          {/* HOD */}
          <Stack.Screen name="ViewFaculty" component={ViewFaculty} /> 
          <Stack.Screen name="ViewCourse" component={ViewCourse} /> 
@@ -60,7 +66,9 @@ const AppNavigator = () => {
                <Stack.Screen name="DutySwitch" component={DutySwitch}  />
                 <Stack.Screen name="VettingAlerts" component={VettingAlerts}  />
               <Stack.Screen name="CurrentPapers" component={CurrentPapers} />
-{/* <Stack.Screen name="PastPapers" component={PastPapers} /> */}
+                <Stack.Screen name="PastPaper" component={PastPaper} /> 
+                <Stack.Screen name="PastPaperView" component={PastPaperView} /> 
+
                 {/* {FacultyMember} */}
                 <Stack.Screen name="MySubjects" component={MySubjects} />
                  <Stack.Screen name="ViewTopics" component={SubjectTopic } />

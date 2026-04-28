@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useRef } from "react";
 import {
   Modal,
   View,
@@ -128,38 +129,69 @@ export default function CheckPolicyModal({
   }, [isFullyFulfilled, loading, onPolicyCheck]);
 
   // Auto-update paper status once (safe)
-  useEffect(() => {
-    if (
-      !loading &&
-      policy &&
-      isFullyFulfilled &&
-      !statusUpdated &&
-      paperDetails?.PaperStatus !== "Policy Fulfilled"
-    ) {
-      const updateStatus = async () => {
-  try {
-    const response = await axios.post(`${BASE_URL}/paper/updateStatus/${paperDetails?.PaperId}`, {
-      status: "Policy Fulfilled"
-    });
-    // Optionally update local state
-    setPaperDetails(prev => ({
-      ...prev,
-      PaperStatus: response.data?.PaperStatus || "Policy Fulfilled"
-    }));
-    setMessage("Paper status updated successfully!");
-    setMessageType("success");
-    setTimeout(() => {
-      setMessage("");
-      setMessageType("");
-    }, 3000);
-  } catch (error) {
-    setMessage("Failed to update paper status.");
-    setMessageType("error");
-  }
-};
-    }
-  }, [isFullyFulfilled, loading, policy, statusUpdated, paperDetails, onPolicyCheck]);
+//   useEffect(() => {
+//     if (
+//       !loading &&
+//       policy &&
+//       isFullyFulfilled &&
+//       !statusUpdated &&
+//       paperDetails?.PaperStatus !== "Policy Fulfilled"
+//     ) {
+//       const updateStatus = async () => {
+//   try {
+//     const response = await axios.post(`${BASE_URL}/paper/updateStatus/${paperDetails?.PaperId}`, {
+//       status: "Policy Fulfilled"
+//     });
+//     // Optionally update local state
+//     setPaperDetails(prev => ({
+//       ...prev,
+//       PaperStatus: response.data?.PaperStatus || "Policy Fulfilled"
+//     }));
+//     setMessage("Paper status updated successfully!");
+//     setMessageType("success");
+//     setTimeout(() => {
+//       setMessage("");
+//       setMessageType("");
+//     }, 3000);
+//   } catch (error) {
+//     setMessage("Failed to update paper status.");
+//     setMessageType("error");
+//   }
+// };
+//     }
+//   }, [isFullyFulfilled, loading, policy, statusUpdated, paperDetails, onPolicyCheck]);
 
+const hasUpdatedRef = useRef(false);
+
+useEffect(() => {
+  const updateStatus = async () => {
+    if (
+      loading ||
+      !policy ||
+      !isFullyFulfilled ||
+      hasUpdatedRef.current ||
+      paperDetails?.PaperStatus === "Policy Fulfilled"
+    ) {
+      return;
+    }
+
+    try {
+      await axios.post(
+        `${BASE_URL}/paper/updateStatus/${paperDetails?.PaperId}`,
+        { status: "Policy Fulfilled" }
+      );
+
+      hasUpdatedRef.current = true;
+      setStatusUpdated(true);
+
+      console.log("✅ Paper status updated successfully");
+    } catch (err) {
+      console.log("❌ Status update failed:", err?.message);
+    }
+  };
+
+  updateStatus();
+}, [isFullyFulfilled, loading, policy, paperDetails?.PaperId, paperDetails?.PaperStatus]);
   // Alerts text
   const difficultyAlerts = ["easy", "medium", "tough"]
     .map((level) => ({ level, status: checkStatus(level) }))

@@ -79,7 +79,9 @@ const CreateQuestion = () => {
   const [isUserDirector, setIsUserDirector] = useState(false);
   
   // Use HTTPS if necessary for local dev
-  const baseUrl = "https://localhost:44304/"; 
+ const baseUrl = "http://192.168.137.1/fypProject";
+
+
 
   useEffect(() => {
     if (showComments) fetchComments();
@@ -103,6 +105,12 @@ const CreateQuestion = () => {
       setLoadingComments(false);
     }
   };
+ const imageUri =
+  editForm.imagePreview
+    ? editForm.imagePreview
+    : editForm.currentImage
+    ? `${baseUrl}${editForm.currentImage}`
+    : null;
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
@@ -254,15 +262,27 @@ const CreateQuestion = () => {
     }
   };
 
-  const removeImage = () => {
-    setEditForm((prev) => ({
-      ...prev,
-      image: null,
-      imagePreview: null,
-      currentImage: null,
-      removeCurrentImage: true,
-    }));
-  };
+//   const removeImage = () => {
+//    setEditForm((prev) => ({
+//   ...prev,
+//   image: {
+//     uri: file.uri,
+//     type: file.type || "image/jpeg",
+//     name: file.fileName || `photo_${Date.now()}.jpg`,
+//   },
+//   imagePreview: file.uri,
+//   removeCurrentImage: false,
+// }));
+//   };
+const removeImage = () => {
+  setEditForm((prev) => ({
+    ...prev,
+    image: null,
+    imagePreview: null,
+    currentImage: null,
+    removeCurrentImage: true,
+  }));
+};
 
   const startEditing = (index) => {
     const question = paperDetails.Questions[index];
@@ -313,13 +333,19 @@ const CreateQuestion = () => {
   const handleEditSubmit = async () => {
     try {
       const formDataToSend = new FormData();
-      const questionData = {
-        text: editForm.text,
-        marks: parseInt(editForm.marks),
-        difficulty_level: editForm.difficulty,
-        clo_id: editForm.cloId ? parseInt(editForm.cloId) : null,
-      };
-
+      // const questionData = {
+      //   text: editForm.text,
+      //   marks: parseInt(editForm.marks),
+      //   difficulty_level: editForm.difficulty,
+      //   clo_id: editForm.cloId ? parseInt(editForm.cloId) : null,
+      // };
+const questionData = {
+  text: editForm.text,
+  marks: parseInt(editForm.marks),
+  difficulty_level: editForm.difficulty,
+  clo_id: editForm.cloId ? parseInt(editForm.cloId) : null,
+  editedByDirector: isUserDirector, // 👈 ADD THIS
+};
       if (editingIndex === "extra") {
         questionData.paper_id = paperDetails.PaperId;
         questionData.isextra = true;
@@ -456,7 +482,8 @@ const CreateQuestion = () => {
   const questions = paperDetails.Questions || [];
   const selectedQuestion = activeTab < questions.length ? questions[activeTab] : null;
   const loggedInUserId = Number(userId);
-  const canEdit = createPaper || (selectedQuestion && selectedQuestion.EditorId === loggedInUserId);
+  // const canEdit = createPaper || (selectedQuestion && selectedQuestion.EditorId === loggedInUserId);
+  const canEdit = createPaper || isUserDirector || (selectedQuestion && selectedQuestion.EditorId === loggedInUserId);
   const isExtraTab = editingIndex === "extra";
 
   const handleSaveReorder = async (newOrder) => {
@@ -589,7 +616,12 @@ const CreateQuestion = () => {
                 isUserDirector && paperDetails.PaperStatus === "Submitted" ? styles.directorApproveBtn : null,
               ]}
               onPress={() => {
-                if (createPaper && paperDetails.PaperStatus === "ReadyForFacultyApprover") handleSendToFacultyApprover();
+               if (createPaper && 
+   (paperDetails.PaperStatus === "ReadyForFacultyApprover" 
+    || paperDetails.PaperStatus === "Creation"))
+{
+   handleSendToFacultyApprover();
+} handleSendToFacultyApprover();
                 if (isUserDirector && paperDetails.PaperStatus === "Submitted") handleDirectorApprove();
               }}
             >
@@ -624,13 +656,16 @@ const CreateQuestion = () => {
               </View>
             </View>
 
-            <View style={styles.statCard}>
+   <View style={styles.statCard}>
               <Text style={styles.statIcon}>🎓</Text>
               <View style={styles.statInfo}>
                 <Text style={styles.statLabel}>Program</Text>
                 <Text style={styles.statValue}>{paperDetails.DegreePrograms || "N/A"}</Text>
               </View>
             </View>
+
+
+           
 
             <View style={styles.headerActions}>
               <TouchableOpacity style={styles.commentBtn} onPress={() => setShowComments(true)}>
@@ -776,10 +811,13 @@ const CreateQuestion = () => {
                       <View style={styles.imageUpload}>
                         {(editForm.imagePreview || editForm.currentImage) && (
                           <View style={styles.imagePreview}>
-                            <Image
-                              source={{ uri: editForm.imagePreview || `${baseUrl}${editForm.currentImage}` }}
-                              style={styles.previewImg}
-                            />
+  
+{imageUri && (
+  <Image
+    source={{ uri: imageUri }}
+    style={styles.previewImg}
+  />
+)}
                             <TouchableOpacity style={styles.removeImageBtn} onPress={removeImage}><Text style={styles.removeImageText}>×</Text></TouchableOpacity>
                           </View>
                         )}
@@ -801,10 +839,29 @@ const CreateQuestion = () => {
                   !isExtraTab &&
                   selectedQuestion && (
                     <View style={styles.questionContent}>
-                      <Text style={styles.questionText}>{selectedQuestion.Text}</Text>
+                      {/* <Text style={styles.questionText}>{selectedQuestion.Text}</Text> */}
+                      <Text
+  style={[
+    styles.questionText,
+    selectedQuestion?.EditedByDirector && !isUserDirector
+      ? styles.highlightedText
+      : null,
+  ]}
+>
+  {selectedQuestion.Text}
+</Text>
+                      
                       {selectedQuestion.Image && (
                         <View style={styles.questionImageContainer}>
-                          <Image source={{ uri: `${baseUrl}${selectedQuestion.Image}` }} style={styles.questionImage} />
+                         
+                          <Image 
+  source={{ 
+    uri: selectedQuestion.Image?.startsWith("http")
+      ? selectedQuestion.Image
+      : `${baseUrl}${selectedQuestion.Image}` 
+  }} 
+  style={styles.questionImage}
+/>
                         </View>
                       )}
                       <View style={styles.questionTags}>
@@ -1133,6 +1190,13 @@ questionCard: {
   marginTop: 10
 },
 
+highlightedText: {
+  backgroundColor: "#fff3cd", // light yellow highlight
+  padding: 6,
+  borderRadius: 6,
+  borderWidth: 1,
+  borderColor: "#ffeeba",
+},
 questionCardHeader: { 
   padding: 12, 
   backgroundColor: COLORS.gray50, 
