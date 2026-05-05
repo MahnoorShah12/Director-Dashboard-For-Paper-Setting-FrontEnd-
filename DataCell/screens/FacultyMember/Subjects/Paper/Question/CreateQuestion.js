@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+
+
 import { useRoute, useNavigation } from "@react-navigation/native";
 import {
  
@@ -19,10 +21,11 @@ import {
   FlatList, // Added FlatList
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import { diffChars } from "diff";
+import DiffMatchPatch from "diff-match-patch";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { launchImageLibrary } from "react-native-image-picker";
+ import { launchImageLibrary } from "react-native-image-picker";
 import AssignQuestionModal from "./AssignQuestionModal";
 import ReorderQuestionsModal from "./ReorderQuestionsModal";
 import CheckPolicyModal from "./CheckPolicyModal";
@@ -77,12 +80,135 @@ const CreateQuestion = () => {
   
   const [policyStatus, setPolicyStatus] = useState(null);
   const [isUserDirector, setIsUserDirector] = useState(false);
-  
+  const [cloSearch, setCloSearch] = useState("");
+  const [searchText, setSearchText] = useState("");
+  console.log(searchText);
+console.log(filteredClos);
   // Use HTTPS if necessary for local dev
- const baseUrl = "http://192.168.137.1/fypProject";
+ const baseUrl = "http://192.168.31.125/fypProject";
 
 
 
+
+
+
+
+
+// const HighlightedText = ({ original = "", edited = "" }) => {
+//   const dmp = new DiffMatchPatch();
+
+//   // safety check
+//   const oldText = typeof original === "string" ? original : "";
+//   const newText = typeof edited === "string" ? edited : "";
+
+//   if (!oldText || oldText === newText) {
+//     return <Text style={styles.normalText}>{newText}</Text>;
+//   }
+
+//   const diffs = dmp.diff_main(oldText, newText);
+//   dmp.diff_cleanupSemantic(diffs);
+
+//   return (
+//     <Text style={styles.normalText}>
+//       {diffs.map((part, index) => {
+//         const type = part[0];
+//         const text = part[1];
+
+//         if (!text) return null;
+
+//         if (type === 0) {
+//           return <Text key={index}>{text}</Text>;
+//         }
+
+//         if (type === 1) {
+//           return (
+//             <Text key={index} style={styles.boldText}>
+//               {text}
+//             </Text>
+//           );
+//         }
+
+//         if (type === -1) {
+//           return (
+//             <Text key={index} style={styles.strikeText}>
+//               {text}
+//             </Text>
+//           );
+//         }
+
+//         return null;
+//       })}
+//     </Text>
+//   );
+// };
+
+
+const HighlightedText = ({ original = "", edited = "" }) => {
+  const dmp = new DiffMatchPatch();
+
+  const oldText = typeof original === "string" ? original : "";
+  const newText = typeof edited === "string" ? edited : "";
+
+  if (!oldText || oldText === newText) {
+    return (
+      <View style={styles.diffBox}>
+        <Text style={styles.normalText}>{newText}</Text>
+      </View>
+    );
+  }
+
+  const diffs = dmp.diff_main(oldText, newText);
+  dmp.diff_cleanupSemantic(diffs);
+
+  return (
+    <View style={styles.diffBox}>
+      <Text style={styles.normalText}>
+        {diffs.map((part, index) => {
+          const type = part[0];
+          const text = part[1];
+
+          if (!text) return null;
+
+          // UNCHANGED
+          if (type === 0) {
+            return <Text key={index}>{text}</Text>;
+          }
+
+          // ADDED (YELLOW HIGHLIGHT)
+          if (type === 1) {
+            return (
+              <Text key={index} style={styles.addedText}>
+                {text}
+              </Text>
+            );
+          }
+
+          // REMOVED (RED STRIKE + LIGHT BACKGROUND)
+          if (type === -1) {
+            return (
+              <Text key={index} style={styles.removedText}>
+                {text}
+              </Text>
+            );
+          }
+
+          return null;
+        })}
+      </Text>
+    </View>
+  );
+};
+ const isQuestionLocked =
+  selectedQuestion?.Status === "approved" ||
+  selectedQuestion?.Status === "rejected";
+
+  console.log("Questions:", questions);
+
+console.log("ActiveTab:", activeTab);
+
+const filteredClos = (clos || []).filter(item =>
+  (item?.Title || "").toLowerCase().includes(searchText.toLowerCase())
+);
   useEffect(() => {
     if (showComments) fetchComments();
   }, [showComments]);
@@ -352,6 +478,7 @@ const questionData = {
       }
 
       formDataToSend.append("question", JSON.stringify(questionData));
+      formDataToSend.append("isDirector", isUserDirector ? "true" : "false");
 
       if (editForm.image) {
         formDataToSend.append("image", {
@@ -481,6 +608,18 @@ const questionData = {
 
   const questions = paperDetails.Questions || [];
   const selectedQuestion = activeTab < questions.length ? questions[activeTab] : null;
+ 
+const safeText = (val) =>
+  typeof val === "string" || typeof val === "number"
+    ? String(val)
+    : "";
+const original = selectedQuestion?.EditedText ?? "";
+const edited = selectedQuestion?.Text ?? "";
+const isEdited = selectedQuestion?.IsEdited === true;
+
+
+console.log("ORIGINAL:", selectedQuestion?.EditedText || "");
+console.log("EDITED:", selectedQuestion?.Text);
   const loggedInUserId = Number(userId);
   // const canEdit = createPaper || (selectedQuestion && selectedQuestion.EditorId === loggedInUserId);
   const canEdit = createPaper || isUserDirector || (selectedQuestion && selectedQuestion.EditorId === loggedInUserId);
@@ -708,7 +847,19 @@ const questionData = {
                 <Text style={styles.reorderTextBtn}>Check Policy</Text>
               </TouchableOpacity>
             )}
-
+<TouchableOpacity
+  style={styles.reorderBtn}
+  onPress={() =>
+    navigation.navigate("Solution", {
+      paperId: paperDetails.PaperId,
+filePath: paperDetails.PaperSolution,
+      
+   createPaper: true,
+    })
+  }
+>
+  <Text style={styles.reorderTextBtn}>Go to Solution</Text>
+</TouchableOpacity>
             <Text style={styles.totalQuestions}>Total: {questions.length}</Text>
           </ScrollView>
 
@@ -721,8 +872,13 @@ const questionData = {
                   </Text>
                   <View style={styles.leftActions}>
                     {!isExtraTab && editingIndex !== activeTab && canEdit && (
-                      <TouchableOpacity style={styles.editButton} onPress={() => startEditing(activeTab)}>
+                      <TouchableOpacity  style={[
+    styles.editButton,
+    isQuestionLocked && { opacity: 0.5 }
+  ]} onPress={() => startEditing(activeTab)}
+                       disabled={isQuestionLocked}>
                         <Text style={styles.editButtonText}>Edit</Text>
+                   
                       </TouchableOpacity>
                     )}
 
@@ -779,8 +935,18 @@ const questionData = {
                         />
                       </View>
 
+
                       {/* Updated CLO Picker to open Modal */}
                       <View style={styles.formGroup}>
+
+                        {/* <TextInput
+  placeholder="Search CLO..."
+  value={cloSearch}
+  onChangeText={setCloSearch}
+  placeholderTextColor={"brown"}
+
+  style={styles.input}
+/> */}
                         <Text style={styles.label}>CLO</Text>
                         {loadingClos ? (
                           <Text>Loading CLOs...</Text>
@@ -835,23 +1001,24 @@ const questionData = {
                       <TouchableOpacity style={styles.saveBtn} onPress={handleEditSubmit}><Text style={styles.saveText}>Save Changes</Text></TouchableOpacity>
                     </View>
                   </View>
+                  
                 ) : (
                   !isExtraTab &&
                   selectedQuestion && (
                     <View style={styles.questionContent}>
-                      {/* <Text style={styles.questionText}>{selectedQuestion.Text}</Text> */}
-                      <Text
-  style={[
-    styles.questionText,
-    selectedQuestion?.EditedByDirector && !isUserDirector
-      ? styles.highlightedText
-      : null,
-  ]}
->
-  {selectedQuestion.Text}
-</Text>
-                      
-                      {selectedQuestion.Image && (
+                 
+{selectedQuestion?.IsEdited ? (
+  <HighlightedText
+    original={safeText(selectedQuestion?.EditedText)}
+    edited={safeText(selectedQuestion?.Text)}
+  />
+) : (
+  <Text style={styles.questionText}>
+    {safeText(selectedQuestion?.Text)}
+  </Text>
+)}
+
+        {selectedQuestion.Image && (
                         <View style={styles.questionImageContainer}>
                          
                           <Image 
@@ -890,9 +1057,16 @@ const questionData = {
         <Modal visible={showCloListModal} transparent animationType="slide">
             <View style={styles.modalOverlay}>
                 <View style={styles.cloModalContainer}>
+                                <TextInput
+  value={searchText}
+  onChangeText={setSearchText}
+  placeholder="Serach Clos"
+  placeholderTextColor={"brown"}
+/>
+     
                     <Text style={styles.modalTitle}>Select CLO</Text>
-                    <FlatList
-                        data={clos}
+                     {/* <FlatList
+                        data={filteredClos}
                         keyExtractor={item => item.Id.toString()}
                         renderItem={({item}) => (
                             <TouchableOpacity 
@@ -901,7 +1075,19 @@ const questionData = {
                                     setEditForm(p => ({...p, cloId: item.Id}));
                                     setShowCloListModal(false);
                                 }}
-                            >
+                            > */}
+
+                            <FlatList
+  data={filteredClos || []}
+  keyExtractor={(item) => item?.Id?.toString() || Math.random().toString()}
+  renderItem={({ item }) => (
+    <TouchableOpacity
+      style={styles.cloListItem}
+      onPress={() => {
+        setEditForm(p => ({ ...p, cloId: item?.Id }));
+        setShowCloListModal(false);
+      }}
+    >
                                 <Text>{item.Title}</Text>
                             </TouchableOpacity>
                         )}
@@ -1017,6 +1203,34 @@ paperContentContainer: {
   paddingHorizontal: 12,   // 👈 thora kam padding
   paddingTop: 10, 
   paddingBottom: 24 
+},
+
+
+diffBox: {
+  backgroundColor: "#fff",
+  borderWidth: 1,
+  borderColor: "#e5e7eb",
+  borderRadius: 12,
+  padding: 12,
+  shadowColor: "#000",
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  elevation: 2,
+},
+
+addedText: {
+  backgroundColor: "#dbe11b", // light yellow
+  color: "#000",
+  paddingHorizontal: 3,
+  borderRadius: 4,
+},
+
+removedText: {
+  backgroundColor: "#fee2e2", // light red
+  textDecorationLine: "line-through",
+  color: "#999292",
+  paddingHorizontal: 3,
+  borderRadius: 4,
 },
   header: {
   backgroundColor: '#0B8F5A',
@@ -1173,6 +1387,20 @@ tabText: {
   fontWeight: "600" 
 },
 
+strikeText: {
+  textDecorationLine: "line-through",
+  color: "#9ca3af",
+},
+
+boldText: {
+  fontWeight: "700",
+  color: "#16a34a",
+},
+
+normalText: {
+  fontSize: 16,
+  color: "#374151",
+},
 tabActive: { 
   backgroundColor: COLORS.primary100 
 },

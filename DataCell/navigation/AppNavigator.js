@@ -22,6 +22,7 @@ import AssessmentPolicy from '../screens/HOD/course/AssessmentPolicy';
 import AssignPaper from '../screens/HOD/course/AssignPaper';
 import DutySwitch from '../screens/Director/DutySwitch';
 import VettingAlerts from '../screens/Director/VettingAlerts';
+import MeetingScheduleByTimeTable from '../screens/Director/MeetingScheduleByTimeTable';
 import  MySubjects from '../screens/FacultyMember/MySubjects';
 
 import  SubjectClo from '../screens/FacultyMember/Subjects/CLO';
@@ -32,6 +33,7 @@ import CreatePaper from '../screens/FacultyMember/Subjects/Paper/CreatePaper';
 import CreateQuestion from '../screens/FacultyMember/Subjects/Paper/Question/CreateQuestion';
 import AssignQuestionModal from '../screens/FacultyMember/Subjects/Paper/Question/AssignQuestionModal';
 import CheckPolicyModal from '../screens/FacultyMember/Subjects/Paper/Question/CheckPolicyModal';
+import Solution from '../screens/FacultyMember/Subjects/Paper/Question/Solution';
 import ReorderQuestionsModal from '../screens/FacultyMember/Subjects/Paper/Question/ReorderQuestionsModal';
 import CurrentPapers from '../screens/Director/CurrentPapers';
 import PastPaper from '../screens/Director/PastPaper';
@@ -67,7 +69,8 @@ const AppNavigator = () => {
                 <Stack.Screen name="VettingAlerts" component={VettingAlerts}  />
               <Stack.Screen name="CurrentPapers" component={CurrentPapers} />
                 <Stack.Screen name="PastPaper" component={PastPaper} /> 
-                <Stack.Screen name="PastPaperView" component={PastPaperView} /> 
+                <Stack.Screen name="PastPaperView" component={PastPaperView} />
+                 <Stack.Screen name="MeetingScheduleByTimeTable" component={MeetingScheduleByTimeTable} /> 
 
                 {/* {FacultyMember} */}
                 <Stack.Screen name="MySubjects" component={MySubjects} />
@@ -78,6 +81,7 @@ const AppNavigator = () => {
                              <Stack.Screen name="AssignQuestionModal" component={AssignQuestionModal} />
                              <Stack.Screen name="CheckPolicyModal" component={CheckPolicyModal} />
 <Stack.Screen name="ReorderQuestionsModal" component={ReorderQuestionsModal} />
+<Stack.Screen name="Solution" component={Solution} />
 
       </Stack.Navigator>
     </NavigationContainer>
