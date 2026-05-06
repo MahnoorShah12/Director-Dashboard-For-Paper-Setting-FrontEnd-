@@ -6,7 +6,7 @@
 
 
 
-export const BASE_URL = 'http://10.157.166.187/fypProject/api';
+export const BASE_URL = 'http://192.168.31.134/fypProject/api';
 
 
 export const API = {
