@@ -1,3 +1,303 @@
+// import React, { useEffect, useState } from "react";
+// import {
+//   View,
+//   Text,
+//   TouchableOpacity,
+//   StyleSheet,
+//   ScrollView,
+//   Modal,
+//   ActivityIndicator,
+// } from "react-native";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { useNavigation, useRoute } from "@react-navigation/native";
+// import axios from "axios";
+// import { BASE_URL } from "../../config/Api";
+
+// const MySubjects = () => {
+//   const navigation = useNavigation();
+//   const route = useRoute();
+//   const { courseId } = route.params || {};
+
+//   const [name, setName] = useState("Guest");
+//   const [roles, setRoles] = useState([]);
+//   const [userId, setUserId] = useState(null);
+//   const [course, setCourse] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [createPaper, setCreatePaper] = useState(false);
+//   const [showTermModal, setShowTermModal] = useState(false);
+//   const [selectedCourseId, setSelectedCourseId] = useState(null);
+
+//   useEffect(() => {
+//     const loadData = async () => {
+//       const storedUserId = await AsyncStorage.getItem("user_id");
+//       const storedName = await AsyncStorage.getItem("user_name");
+//       const storedRoles = JSON.parse(await AsyncStorage.getItem("user_roles") || "[]");
+
+//       if (!storedRoles || storedRoles.length === 0) {
+//         navigation.replace("Login");
+//         return;
+//       }
+
+//       setName(storedName || "Guest");
+//       const normalizedRoles = storedRoles.map((r) => r.toLowerCase());
+//       setRoles(normalizedRoles);
+//       setUserId(storedUserId);
+
+//       fetchCourseForUser(storedUserId, courseId);
+//     };
+
+//     loadData();
+//   }, [courseId]);
+
+//   const fetchCourseForUser = async (userId, courseId) => {
+//     try {
+//       const response = await axios.get(
+//         `${BASE_URL}/paper/verify-teacher-teach-course/${userId}?courseId=${courseId}`
+//       );
+
+//       const assignedCourse = response.data.Course;
+//       setCreatePaper(response.data.CreatePaper);
+
+//       if (assignedCourse) {
+//         setCourse(assignedCourse);
+//       } else {
+//         navigation.replace("Unauthorized"); // Navigate if course not assigned
+//       }
+//     } catch (error) {
+//       console.error("Error verifying course:", error);
+//       navigation.replace("Error");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const handlePaperClick = (courseId) => {
+//     setSelectedCourseId(courseId);
+//     setShowTermModal(true);
+//   };
+
+//   const Card = ({ title, onPress }) => (
+//     <TouchableOpacity style={styles.card} onPress={onPress}>
+//       <Text style={styles.cardTitle}>{title}</Text>
+//     </TouchableOpacity>
+//   );
+
+//   if (loading) {
+//     return (
+//       <View style={styles.container}>
+//         <Text style={styles.loadingText}>Loading course details...</Text>
+//         <ActivityIndicator size="large" color="#0aa36c" />
+//       </View>
+//     );
+//   }
+
+//   return (
+//     <ScrollView style={styles.container}>
+//       <Text style={styles.screenHeading}>Course Detail</Text>
+//       {course ? (
+         
+//         <View style={styles.courseDetails}>
+//           <Text style={styles.courseTitle}>{course.CourseTitle}</Text>
+//           <Text style={styles.courseCode}>Course Code: {course.CourseCode}</Text>
+
+//           <Text style={styles.sectionTitle}>Course Panel</Text>
+//           <View style={styles.cardGrid}>
+//             {createPaper ? (
+//               <Card title="Create Paper" onPress={() => handlePaperClick(course.CourseId)} />
+//             ) : (
+//               <Card title="View  Paper" onPress={() => handlePaperClick(course.CourseId)} />
+//             )}
+//             <Card
+//               title="View Topics"
+//               onPress={() => navigation.navigate("ViewTopics", { courseId: course.CourseId })}
+//             />
+//             <Card
+//               title="View CLOs"
+//               onPress={() => navigation.navigate("ViewCLOs", { courseId: course.CourseId })}
+//             />
+//           </View>
+//         </View>
+//       ) : (
+//         <View style={styles.unauthorizedMessage}>
+//           <Text>You are not assigned to this course.</Text>
+//         </View>
+//       )}
+
+//       {/* Term Selection Modal */}
+//       <Modal transparent visible={showTermModal} animationType="fade">
+//         <View style={styles.modalOverlay}>
+//           <View style={styles.modalContent}>
+//             <Text style={styles.modalTitle}>Select Term</Text>
+//             <Text style={styles.modalText}>Which term do you want to access?</Text>
+//             <View style={styles.modalButtons}>
+//               <TouchableOpacity
+//                 style={styles.termBtn}
+//                 onPress={() => {
+//                   setShowTermModal(false);
+//                   navigation.navigate("CreatePaper", { courseId: selectedCourseId, term: "Mid" });
+//                 }}
+//               >
+//                 <Text style={styles.termBtnText}>Mid Term</Text>
+//               </TouchableOpacity>
+//               <TouchableOpacity
+//                 style={styles.termBtn}
+//                 onPress={() => {
+//                   setShowTermModal(false);
+//                   navigation.navigate("CreatePaper", { courseId: selectedCourseId, term: "Final" });
+//                 }}
+//               >
+//                 <Text style={styles.termBtnText}>Final Term</Text>
+//               </TouchableOpacity>
+//             </View>
+//             <TouchableOpacity
+//               style={styles.modalClose}
+//               onPress={() => setShowTermModal(false)}
+//             >
+//               <Text style={{ fontSize: 20 }}>✕</Text>
+//             </TouchableOpacity>
+//           </View>
+//         </View>
+//       </Modal>
+//     </ScrollView>
+//   );
+// };
+
+// export default MySubjects;
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: "#e6fff6",
+//     padding: 20,
+//   },
+//   screenHeading: {
+//   fontSize: 24,
+//   fontWeight: "700",
+//   color: "#0aa36c",
+//   textAlign: "center",
+//   marginTop: 10,
+//   marginBottom: 15,
+// },
+//   loadingText: {
+//     marginTop: 100,
+//     textAlign: "center",
+//     fontSize: 18,
+//     color: "#0aa36c",
+//     fontWeight: "500",
+//   },
+//   courseDetails: {
+//     backgroundColor: "#fff",
+//     borderRadius: 18,
+//     padding: 25,
+//     marginTop: 20,
+//     borderLeftWidth: 6,
+//     borderLeftColor: "#0aa36c",
+//     shadowColor: "#000",
+//     shadowOpacity: 0.1,
+//     shadowRadius: 10,
+//     shadowOffset: { width: 0, height: 6 },
+//   },
+//   courseTitle: {
+//     fontSize: 22,
+//     fontWeight: "700",
+//     color: "#0aa36c",
+//     marginBottom: 10,
+//   },
+//   courseCode: {
+//     fontSize: 16,
+//     color: "#444",
+//     marginBottom: 20,
+//   },
+//   sectionTitle: {
+//     fontSize: 18,
+//     fontWeight: "600",
+//     marginBottom: 10,
+//     color: "#333",
+//   },
+//   cardGrid: {
+//     flexDirection: "row",
+//     flexWrap: "wrap",
+//     justifyContent: "space-between",
+//   },
+//   card: {
+//     backgroundColor: "#fff",
+//     padding: 20,
+//     borderRadius: 16,
+//     marginBottom: 15,
+//     width: "48%",
+//     borderLeftWidth: 5,
+//     borderLeftColor: "#0aa36c",
+//     shadowColor: "#000",
+//     shadowOpacity: 0.08,
+//     shadowRadius: 8,
+//     shadowOffset: { width: 0, height: 4 },
+//     alignItems: "center",
+//   },
+//   cardTitle: {
+//     fontSize: 16,
+//     fontWeight: "600",
+//     color: "#333",
+//     textAlign: "center",
+//   },
+//   unauthorizedMessage: {
+//     marginTop: 40,
+//     padding: 20,
+//     backgroundColor: "#fff",
+//     borderRadius: 12,
+//     alignItems: "center",
+//     shadowColor: "#000",
+//     shadowOpacity: 0.06,
+//     shadowRadius: 6,
+//     shadowOffset: { width: 0, height: 4 },
+//     color: "#d9534f",
+//   },
+//   modalOverlay: {
+//     flex: 1,
+//     backgroundColor: "rgba(0,0,0,0.4)",
+//     justifyContent: "center",
+//     alignItems: "center",
+//   },
+//   modalContent: {
+//     backgroundColor: "#fff",
+//     borderRadius: 16,
+//     padding: 25,
+//     width: "85%",
+//     alignItems: "center",
+//   },
+//   modalTitle: {
+//     fontSize: 20,
+//     color: "#0aa36c",
+//     fontWeight: "600",
+//     marginBottom: 10,
+//   },
+//   modalText: {
+//     fontSize: 16,
+//     marginBottom: 20,
+//     color: "#333",
+//     textAlign: "center",
+//   },
+//   modalButtons: {
+//     flexDirection: "row",
+//     justifyContent: "space-around",
+//     width: "100%",
+//     marginBottom: 15,
+//   },
+//   termBtn: {
+//     backgroundColor: "#0aa36c",
+//     paddingVertical: 12,
+//     paddingHorizontal: 20,
+//     borderRadius: 12,
+//   },
+//   termBtnText: {
+//     color: "#fff",
+//     fontWeight: "600",
+//   },
+//   modalClose: {
+//     position: "absolute",
+//     top: 10,
+//     right: 10,
+//   },
+// });
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -8,153 +308,425 @@ import {
   Modal,
   ActivityIndicator,
 } from "react-native";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
+
 import axios from "axios";
 import { BASE_URL } from "../../config/Api";
 
 const MySubjects = () => {
   const navigation = useNavigation();
   const route = useRoute();
+
   const { courseId } = route.params || {};
 
   const [name, setName] = useState("Guest");
   const [roles, setRoles] = useState([]);
   const [userId, setUserId] = useState(null);
+
   const [course, setCourse] = useState(null);
+
   const [loading, setLoading] = useState(true);
-  const [createPaper, setCreatePaper] = useState(false);
-  const [showTermModal, setShowTermModal] = useState(false);
-  const [selectedCourseId, setSelectedCourseId] = useState(null);
+  const [createPaper, setCreatePaper] =
+    useState(false);
+
+  // NEW STATES
+  const [showTermModal, setShowTermModal] =
+    useState(false);
+
+  const [showTypeModal, setShowTypeModal] =
+    useState(false);
+
+  const [selectedCourseId, setSelectedCourseId] =
+    useState(null);
+
+  const [selectedTerm, setSelectedTerm] =
+    useState(null);
 
   useEffect(() => {
     const loadData = async () => {
-      const storedUserId = await AsyncStorage.getItem("user_id");
-      const storedName = await AsyncStorage.getItem("user_name");
-      const storedRoles = JSON.parse(await AsyncStorage.getItem("user_roles") || "[]");
+      const storedUserId =
+        await AsyncStorage.getItem("user_id");
 
-      if (!storedRoles || storedRoles.length === 0) {
+      const storedName =
+        await AsyncStorage.getItem("user_name");
+
+      const storedRoles = JSON.parse(
+        (await AsyncStorage.getItem(
+          "user_roles"
+        )) || "[]"
+      );
+
+      if (
+        !storedRoles ||
+        storedRoles.length === 0
+      ) {
         navigation.replace("Login");
         return;
       }
 
       setName(storedName || "Guest");
-      const normalizedRoles = storedRoles.map((r) => r.toLowerCase());
+
+      const normalizedRoles = storedRoles.map(
+        (r) => r.toLowerCase()
+      );
+
       setRoles(normalizedRoles);
+
       setUserId(storedUserId);
 
-      fetchCourseForUser(storedUserId, courseId);
+      fetchCourseForUser(
+        storedUserId,
+        courseId
+      );
     };
 
     loadData();
   }, [courseId]);
 
-  const fetchCourseForUser = async (userId, courseId) => {
+  // VERIFY COURSE
+  const fetchCourseForUser = async (
+    userId,
+    courseId
+  ) => {
     try {
       const response = await axios.get(
         `${BASE_URL}/paper/verify-teacher-teach-course/${userId}?courseId=${courseId}`
       );
 
-      const assignedCourse = response.data.Course;
-      setCreatePaper(response.data.CreatePaper);
+      const assignedCourse =
+        response.data.Course;
+
+      setCreatePaper(
+        response.data.CreatePaper
+      );
 
       if (assignedCourse) {
         setCourse(assignedCourse);
       } else {
-        navigation.replace("Unauthorized"); // Navigate if course not assigned
+        navigation.replace("Unauthorized");
       }
     } catch (error) {
-      console.error("Error verifying course:", error);
-      navigation.replace("Error");
+      console.log(
+        "Error verifying course:",
+        error
+      );
+
+      if (
+        error.response &&
+        error.response.status === 400
+      ) {
+        navigation.replace("Login");
+      } else {
+        navigation.replace("Error");
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // CHECK LAB EXISTENCE
+  const getLabHours = (credit) => {
+    if (!credit) return 0;
+
+    const match = credit.match(
+      /\((\d+)-(\d+)\)/
+    );
+
+    return match
+      ? parseInt(match[2])
+      : 0;
+  };
+
+  const hasLab =
+    getLabHours(course?.CreditHours) > 0;
+
+  // PAPER CLICK
   const handlePaperClick = (courseId) => {
     setSelectedCourseId(courseId);
     setShowTermModal(true);
   };
 
+  // CARD COMPONENT
   const Card = ({ title, onPress }) => (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-      <Text style={styles.cardTitle}>{title}</Text>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <Text style={styles.cardTitle}>
+        {title}
+      </Text>
     </TouchableOpacity>
   );
 
+  // LOADING
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Loading course details...</Text>
-        <ActivityIndicator size="large" color="#0aa36c" />
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>
+          Loading course details...
+        </Text>
+
+        <ActivityIndicator
+          size="large"
+          color="#0aa36c"
+        />
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.screenHeading}>Course Detail</Text>
-      {course ? (
-         
-        <View style={styles.courseDetails}>
-          <Text style={styles.courseTitle}>{course.CourseTitle}</Text>
-          <Text style={styles.courseCode}>Course Code: {course.CourseCode}</Text>
+      <Text style={styles.screenHeading}>
+        Course Detail
+      </Text>
 
-          <Text style={styles.sectionTitle}>Course Panel</Text>
+      {course ? (
+        <View style={styles.courseDetails}>
+
+          <Text style={styles.courseTitle}>
+            {course.CourseTitle}
+          </Text>
+
+          <Text style={styles.courseCode}>
+            Course Code:{" "}
+            {course.CourseCode}
+          </Text>
+
+          <Text style={styles.sectionTitle}>
+            Course Panel
+          </Text>
+
           <View style={styles.cardGrid}>
-            {createPaper ? (
-              <Card title="Create Paper" onPress={() => handlePaperClick(course.CourseId)} />
-            ) : (
-              <Card title="View  Paper" onPress={() => handlePaperClick(course.CourseId)} />
-            )}
+
+            <Card
+              title={
+                createPaper
+                  ? "Create Paper"
+                  : "View Paper"
+              }
+              onPress={() =>
+                handlePaperClick(
+                  course.CourseId
+                )
+              }
+            />
+
             <Card
               title="View Topics"
-              onPress={() => navigation.navigate("ViewTopics", { courseId: course.CourseId })}
+              onPress={() =>
+                navigation.navigate(
+                  "ViewTopics",
+                  {
+                    courseId:
+                      course.CourseId,
+                  }
+                )
+              }
             />
+
             <Card
               title="View CLOs"
-              onPress={() => navigation.navigate("ViewCLOs", { courseId: course.CourseId })}
+              onPress={() =>
+                navigation.navigate(
+                  "ViewCLOs",
+                  {
+                    courseId:
+                      course.CourseId,
+                  }
+                )
+              }
             />
           </View>
         </View>
       ) : (
-        <View style={styles.unauthorizedMessage}>
-          <Text>You are not assigned to this course.</Text>
+        <View
+          style={
+            styles.unauthorizedMessage
+          }
+        >
+          <Text
+            style={
+              styles.unauthorizedText
+            }
+          >
+            You are not assigned to this
+            course.
+          </Text>
         </View>
       )}
 
-      {/* Term Selection Modal */}
-      <Modal transparent visible={showTermModal} animationType="fade">
+      {/* TERM MODAL */}
+      <Modal
+        transparent
+        visible={showTermModal}
+        animationType="fade"
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Term</Text>
-            <Text style={styles.modalText}>Which term do you want to access?</Text>
-            <View style={styles.modalButtons}>
+
+            <Text style={styles.modalTitle}>
+              Select Term
+            </Text>
+
+            <Text style={styles.modalText}>
+              Which term do you want to
+              access?
+            </Text>
+
+            <View
+              style={styles.modalButtons}
+            >
+
               <TouchableOpacity
                 style={styles.termBtn}
                 onPress={() => {
+                  setSelectedTerm("Mid");
                   setShowTermModal(false);
-                  navigation.navigate("CreatePaper", { courseId: selectedCourseId, term: "Mid" });
+                  setShowTypeModal(true);
                 }}
               >
-                <Text style={styles.termBtnText}>Mid Term</Text>
+                <Text
+                  style={
+                    styles.termBtnText
+                  }
+                >
+                  Mid Term
+                </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.termBtn}
                 onPress={() => {
+                  setSelectedTerm(
+                    "Final"
+                  );
+
                   setShowTermModal(false);
-                  navigation.navigate("CreatePaper", { courseId: selectedCourseId, term: "Final" });
+                  setShowTypeModal(true);
                 }}
               >
-                <Text style={styles.termBtnText}>Final Term</Text>
+                <Text
+                  style={
+                    styles.termBtnText
+                  }
+                >
+                  Final Term
+                </Text>
               </TouchableOpacity>
+
             </View>
+
             <TouchableOpacity
               style={styles.modalClose}
-              onPress={() => setShowTermModal(false)}
+              onPress={() =>
+                setShowTermModal(false)
+              }
             >
-              <Text style={{ fontSize: 20 }}>✕</Text>
+              <Text
+                style={styles.closeText}
+              >
+                ✕
+              </Text>
             </TouchableOpacity>
+
+          </View>
+        </View>
+      </Modal>
+
+      {/* TYPE MODAL */}
+      <Modal
+        transparent
+        visible={showTypeModal}
+        animationType="fade"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+
+            <Text style={styles.modalTitle}>
+              Select Paper Type
+            </Text>
+
+            <View
+              style={styles.modalButtons}
+            >
+
+              {/* THEORY */}
+              <TouchableOpacity
+                style={styles.termBtn}
+                onPress={() => {
+                  setShowTypeModal(false);
+
+                  navigation.navigate(
+                    "CreatePaper",
+                    {
+                      courseId:
+                        selectedCourseId,
+                      term: selectedTerm,
+                      type: "theory",
+                    }
+                  );
+                }}
+              >
+                <Text
+                  style={
+                    styles.termBtnText
+                  }
+                >
+                  📘 Theory
+                </Text>
+              </TouchableOpacity>
+
+              {/* LAB */}
+              {hasLab && (
+                <TouchableOpacity
+                  style={styles.termBtn}
+                  onPress={() => {
+                    setShowTypeModal(
+                      false
+                    );
+
+                    navigation.navigate(
+                      "CreatePaper",
+                      {
+                        courseId:
+                          selectedCourseId,
+                        term: selectedTerm,
+                        type: "lab",
+                      }
+                    );
+                  }}
+                >
+                  <Text
+                    style={
+                      styles.termBtnText
+                    }
+                  >
+                    🧪 Lab
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+            </View>
+
+            <TouchableOpacity
+              style={styles.modalClose}
+              onPress={() =>
+                setShowTypeModal(false)
+              }
+            >
+              <Text
+                style={styles.closeText}
+              >
+                ✕
+              </Text>
+            </TouchableOpacity>
+
           </View>
         </View>
       </Modal>
@@ -164,27 +736,38 @@ const MySubjects = () => {
 
 export default MySubjects;
 
+/* ================= STYLES ================= */
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#e6fff6",
     padding: 20,
   },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#e6fff6",
+  },
+
   screenHeading: {
-  fontSize: 24,
-  fontWeight: "700",
-  color: "#0aa36c",
-  textAlign: "center",
-  marginTop: 10,
-  marginBottom: 15,
-},
-  loadingText: {
-    marginTop: 100,
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#0aa36c",
     textAlign: "center",
+    marginTop: 10,
+    marginBottom: 15,
+  },
+
+  loadingText: {
+    marginBottom: 15,
     fontSize: 18,
     color: "#0aa36c",
     fontWeight: "500",
   },
+
   courseDetails: {
     backgroundColor: "#fff",
     borderRadius: 18,
@@ -192,109 +775,167 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderLeftWidth: 6,
     borderLeftColor: "#0aa36c",
+
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+
+    elevation: 5,
   },
+
   courseTitle: {
     fontSize: 22,
     fontWeight: "700",
     color: "#0aa36c",
     marginBottom: 10,
   },
+
   courseCode: {
     fontSize: 16,
     color: "#444",
     marginBottom: 20,
   },
+
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 10,
     color: "#333",
   },
+
   cardGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
   },
+
   card: {
     backgroundColor: "#fff",
     padding: 20,
     borderRadius: 16,
     marginBottom: 15,
     width: "48%",
+
     borderLeftWidth: 5,
     borderLeftColor: "#0aa36c",
+
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+
+    elevation: 4,
     alignItems: "center",
   },
+
   cardTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
     textAlign: "center",
   },
+
   unauthorizedMessage: {
     marginTop: 40,
     padding: 20,
     backgroundColor: "#fff",
     borderRadius: 12,
     alignItems: "center",
+
     shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
-    color: "#d9534f",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+
+    elevation: 3,
   },
+
+  unauthorizedText: {
+    color: "#d9534f",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  /* MODAL */
+
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor:
+      "rgba(0,0,0,0.4)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
+
   modalContent: {
+    width: "90%",
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 25,
-    width: "85%",
     alignItems: "center",
+
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+
+    elevation: 8,
   },
+
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     color: "#0aa36c",
-    fontWeight: "600",
+    fontWeight: "700",
     marginBottom: 10,
   },
+
   modalText: {
     fontSize: 16,
-    marginBottom: 20,
     color: "#333",
     textAlign: "center",
+    marginBottom: 25,
   },
+
   modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-around",
     width: "100%",
-    marginBottom: 15,
   },
+
   termBtn: {
     backgroundColor: "#0aa36c",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginBottom: 15,
+    alignItems: "center",
   },
+
   termBtnText: {
     color: "#fff",
-    fontWeight: "600",
+    fontWeight: "700",
+    fontSize: 16,
   },
+
   modalClose: {
     position: "absolute",
-    top: 10,
-    right: 10,
+    top: 12,
+    right: 12,
+  },
+
+  closeText: {
+    fontSize: 22,
+    color: "#333",
+    fontWeight: "700",
   },
 });

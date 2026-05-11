@@ -35,6 +35,13 @@ import AssignQuestionModal from '../screens/FacultyMember/Subjects/Paper/Questio
 import CheckPolicyModal from '../screens/FacultyMember/Subjects/Paper/Question/CheckPolicyModal';
 import Solution from '../screens/FacultyMember/Subjects/Paper/Question/Solution';
 import ReorderQuestionsModal from '../screens/FacultyMember/Subjects/Paper/Question/ReorderQuestionsModal';
+
+// import AssignQuestionModel from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabQuestion/AssignQuestionModel';
+// import CheckPolicyModal from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabQuestion/CheckPolicyModal';
+// import ReorderQuestionsModal from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabQuestion/ReorderQuestionsModal';
+
+// import Question from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabQuestion/Question';
+
 import CurrentPapers from '../screens/Director/CurrentPapers';
 import PastPaper from '../screens/Director/PastPaper';
 import PastPaperView from '../screens/Director/PastPaperView';
@@ -82,6 +89,12 @@ const AppNavigator = () => {
                              <Stack.Screen name="CheckPolicyModal" component={CheckPolicyModal} />
 <Stack.Screen name="ReorderQuestionsModal" component={ReorderQuestionsModal} />
 <Stack.Screen name="Solution" component={Solution} />
+{/* <Stack.Screen name="AssignQuestionModel" component={AssignQuestionModel} />
+<Stack.Screen name="CheckPolicyModal" component={CheckPolicyModal} />
+<Stack.Screen name="ReorderQuestionModal" component={ReorderQuestionsModal} />
+<Stack.Screen name="Question" component={Question} /> */}
+
+
 
       </Stack.Navigator>
     </NavigationContainer>
