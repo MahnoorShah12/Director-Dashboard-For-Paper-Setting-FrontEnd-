@@ -20,7 +20,7 @@ import { pick, types, isCancel } from "@react-native-documents/picker";
 
 const BASE = "http://192.168.31.125/fypProject";
 
-const Solution = () => {
+const LabSolution = () => {
   const route = useRoute();
 
   const { paperId, filePath, createPaper } = route.params || {};
@@ -194,7 +194,7 @@ const getPaperDetails = async () => {
   );
 };
 
-export default Solution;
+export default LabSolution;
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#ffffff",

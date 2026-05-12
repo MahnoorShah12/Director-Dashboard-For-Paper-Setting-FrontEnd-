@@ -31,16 +31,20 @@ import  SubjectTopic from '../screens/FacultyMember/Subjects/Topic';
 
 import CreatePaper from '../screens/FacultyMember/Subjects/Paper/CreatePaper';
 import CreateQuestion from '../screens/FacultyMember/Subjects/Paper/Question/CreateQuestion';
+
 import AssignQuestionModal from '../screens/FacultyMember/Subjects/Paper/Question/AssignQuestionModal';
 import CheckPolicyModal from '../screens/FacultyMember/Subjects/Paper/Question/CheckPolicyModal';
 import Solution from '../screens/FacultyMember/Subjects/Paper/Question/Solution';
 import ReorderQuestionsModal from '../screens/FacultyMember/Subjects/Paper/Question/ReorderQuestionsModal';
 
-// import AssignQuestionModel from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabQuestion/AssignQuestionModel';
-// import CheckPolicyModal from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabQuestion/CheckPolicyModal';
-// import ReorderQuestionsModal from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabQuestion/ReorderQuestionsModal';
+ import LabAssignQuestionModal from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabAssignQuestionModal';
+ import LabCheckPolicyModal from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabCheckPolicyModal';
+ import LabReorderQuestionsModal from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabReorderQuestionsModal';
+ import LabCreateQuestion from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabCreateQuestion.js';
 
-// import Question from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabQuestion/Question';
+
+
+ import LabSolution from '../screens/FacultyMember/Subjects/Paper/LabPaper/LabSolution';
 
 import CurrentPapers from '../screens/Director/CurrentPapers';
 import PastPaper from '../screens/Director/PastPaper';
@@ -84,16 +88,27 @@ const AppNavigator = () => {
                  <Stack.Screen name="ViewTopics" component={SubjectTopic } />
                        <Stack.Screen name="ViewCLOs" component={SubjectClo} />
                          <Stack.Screen name="CreatePaper" component={CreatePaper} />
+
+                                    {/* Thoery */}
+
+
+
                          <Stack.Screen name="CreateQuestion" component={CreateQuestion} />
                              <Stack.Screen name="AssignQuestionModal" component={AssignQuestionModal} />
                              <Stack.Screen name="CheckPolicyModal" component={CheckPolicyModal} />
 <Stack.Screen name="ReorderQuestionsModal" component={ReorderQuestionsModal} />
 <Stack.Screen name="Solution" component={Solution} />
-{/* <Stack.Screen name="AssignQuestionModel" component={AssignQuestionModel} />
-<Stack.Screen name="CheckPolicyModal" component={CheckPolicyModal} />
-<Stack.Screen name="ReorderQuestionModal" component={ReorderQuestionsModal} />
-<Stack.Screen name="Question" component={Question} /> */}
 
+
+
+{/* LabPaper */}
+<Stack.Screen name="LabAssignQuestionModal" component={LabAssignQuestionModal} />
+<Stack.Screen name="LabCheckPolicyModal" component={LabCheckPolicyModal} />
+<Stack.Screen name="LabReorderQuestionModal" component={LabReorderQuestionsModal} /> 
+ <Stack.Screen name="LabCreateQuestion" component={LabCreateQuestion} />
+ <Stack.Screen name="LabSolution" component={LabSolution} />
+
+ 
 
 
       </Stack.Navigator>

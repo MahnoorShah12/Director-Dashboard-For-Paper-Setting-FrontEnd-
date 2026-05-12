@@ -317,8 +317,7 @@
 //   error: { color: 'red' },
 //   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 // });
-
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -328,25 +327,384 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Platform,
+  Modal,
 } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-
 import { BASE_URL } from '../../../../config/Api';
 
+// ─── Theme ────────────────────────────────────────────────────────
+const C = {
+  primary50: '#ecfdf5',
+  primary100: '#d1fae5',
+  primary200: '#a7f3d0',
+  primary500: '#10b981',
+  primary600: '#059669',
+  primary700: '#047857',
+
+  gray50: '#f9fafb',
+  gray100: '#f3f4f6',
+  gray200: '#e5e7eb',
+  gray300: '#d1d5db',
+  gray400: '#9ca3af',
+  gray500: '#6b7280',
+  gray600: '#4b5563',
+  gray700: '#374151',
+  gray800: '#1f2937',
+  gray900: '#111827',
+
+  error: '#ef4444',
+  errorBg: '#fef2f2',
+
+  white: '#ffffff',
+};
+
+// ─── Helper: 24h → 12h ───────────────────────────────────────────
+const to12HourFormat = (time24) => {
+  if (!time24) return '';
+
+  const [hourStr, minute] = time24.split(':');
+
+  let hour = parseInt(hourStr, 10);
+
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+
+  hour = hour % 12 || 12;
+
+  return `${hour}:${minute} ${ampm}`;
+};
+
+// ─── Helper: 12h → 24h ───────────────────────────────────────────
+const to24HourFormat = (time12) => {
+  if (!time12) return null;
+
+  const parts = time12.trim().split(' ');
+
+  if (parts.length < 2) return null;
+
+  const modifier = parts[1].toUpperCase();
+
+  const [h, m] = parts[0].split(':');
+
+  let hours = parseInt(h, 10);
+
+  if (modifier === 'PM' && hours !== 12) hours += 12;
+
+  if (modifier === 'AM' && hours === 12) hours = 0;
+
+  return `${String(hours).padStart(2, '0')}:${m}`;
+};
+
+// ─── Form Field ───────────────────────────────────────────────────
+const FormField = ({ label, children, error }) => (
+  <View style={styles.formGroup}>
+    <Text style={styles.label}>{label}</Text>
+
+    {children}
+
+    {error ? <Text style={styles.errorText}>{error}</Text> : null}
+  </View>
+);
+
+// ─── Read Only Input ─────────────────────────────────────────────
+const ReadOnlyInput = ({ value }) => (
+  <View style={[styles.input, styles.inputReadOnly]}>
+    <Text style={styles.readOnlyText}>{value || '—'}</Text>
+  </View>
+);
+
+// ─── Time Range Picker ───────────────────────────────────────────
+// // ─── Time Range Picker ───────────────────────────────────────────
+// const TimeRangePickerModal = ({ visible, onClose, onConfirm }) => {
+//   const [step, setStep] = useState('start');
+//   const [startDate, setStartDate] = useState(new Date());
+
+//   useEffect(() => {
+//     if (visible) {
+//       setStep('start');
+//       setStartDate(new Date());
+//     }
+//   }, [visible]);
+
+//   if (!visible) return null;
+
+//   const handleChange = (event, selectedDate) => {
+//     if (event?.type === 'dismissed') {
+//       onClose();
+//       return;
+//     }
+//     if (!selectedDate) return;
+
+//     if (step === 'start') {
+//   setStartDate(selectedDate);
+
+//   if (Platform.OS === 'android') {
+//     setTimeout(() => {
+//       setStep('end');
+//     }, 0);
+//   }
+// } else {
+//   const fmt = (d) =>
+//     d.toLocaleTimeString([], {
+//       hour: '2-digit',
+//       minute: '2-digit',
+//       hour12: true,
+//     });
+
+//   setTimeout(() => {
+//     onConfirm(selectedDate, startDate, selectedDate, fmt(startDate), fmt(selectedDate));
+//     onClose();
+//   }, 0);
+// }}
+
+//   // ─── Android: render picker directly (no Modal wrapper) ──────
+//   if (Platform.OS === 'android') {
+//     return (
+//       <DateTimePicker
+//         value={step === 'start' ? startDate : new Date()}
+//         mode="time"
+//         is24Hour={false}
+//         display="default"
+//         onChange={handleChange}
+//       />
+//     );
+//   }
+
+const TimeRangePickerModal = ({
+  visible,
+  onClose,
+  onConfirm,
+}) => {
+  const [step, setStep] = useState('start');
+
+  const [startDate, setStartDate] = useState(
+    new Date()
+  );
+
+  const [endDate, setEndDate] = useState(
+    new Date(new Date().getTime() + 60 * 60 * 1000)
+  );
+
+  useEffect(() => {
+    if (visible) {
+      const now = new Date();
+
+      setStep('start');
+
+      setStartDate(now);
+
+      setEndDate(
+        new Date(now.getTime() + 60 * 60 * 1000)
+      );
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  const formatTime = (date) => {
+    return date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  // ANDROID
+  if (Platform.OS === 'android') {
+    return (
+      <DateTimePicker
+        value={step === 'start' ? startDate : endDate}
+        mode="time"
+        is24Hour={false}
+        display="default"
+        onChange={(event, selectedDate) => {
+          if (event.type === 'dismissed') {
+            onClose();
+            return;
+          }
+
+          if (!selectedDate) return;
+
+          if (step === 'start') {
+            setStartDate(selectedDate);
+
+            setStep('end');
+          } else {
+            setEndDate(selectedDate);
+
+            onConfirm(
+              selectedDate,
+              startDate,
+              selectedDate,
+              formatTime(startDate),
+              formatTime(selectedDate)
+            );
+
+            onClose();
+          }
+        }}
+      />
+    );
+  }
+  // ─── iOS: use Modal wrapper ───────────────────────────────────
+   return (
+    <Modal transparent animationType="fade">
+      <View style={styles.pickerOverlay}>
+        <View style={styles.pickerCard}>
+          <Text style={styles.pickerTitle}>
+            {step === 'start'
+              ? '⏰ Select Start Time'
+              : '⏰ Select End Time'}
+          </Text>
+
+          <DateTimePicker
+            value={
+              step === 'start'
+                ? startDate
+                : endDate
+            }
+            mode="time"
+            display="spinner"
+            onChange={(event, selectedDate) => {
+              if (!selectedDate) return;
+
+              if (step === 'start') {
+                setStartDate(selectedDate);
+              } else {
+                setEndDate(selectedDate);
+              }
+            }}
+          />
+
+          <View style={styles.pickerActions}>
+            <TouchableOpacity
+              style={styles.pickerCancelBtn}
+              onPress={onClose}
+            >
+              <Text style={styles.pickerCancelText}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.pickerConfirmBtn}
+              onPress={() => {
+                if (step === 'start') {
+                  setStep('end');
+                } else {
+                  onConfirm(
+                    endDate,
+                    startDate,
+                    endDate,
+                    formatTime(startDate),
+                    formatTime(endDate)
+                  );
+
+                  onClose();
+                }
+              }}
+            >
+              <Text style={styles.pickerConfirmText}>
+                {step === 'start'
+                  ? 'Next'
+                  : 'Confirm'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+// ─── Date Picker ─────────────────────────────────────────────────
+const DatePickerModal = ({ visible, value, onClose, onConfirm }) => {
+  const [date, setDate] = useState(
+    value ? new Date(value) : new Date()
+  );
+
+  useEffect(() => {
+    if (visible) {
+      setDate(value ? new Date(value) : new Date());
+    }
+  }, [visible, value]);
+
+  if (!visible) return null;
+
+  const handleChange = (event, selectedDate) => {
+    if (event?.type === 'dismissed') {
+      onClose();
+      return;
+    }
+
+    if (!selectedDate) return;
+
+    setDate(selectedDate);
+
+    if (Platform.OS === 'android') {
+      const formatted = selectedDate.toISOString().split('T')[0];
+      onConfirm(formatted);
+      onClose();
+    }
+  };
+
+  
+        
+                 return (
+    <Modal transparent animationType="fade" visible={visible}>
+      <View style={styles.pickerOverlay}>
+        <View style={styles.pickerCard}>
+          <Text style={styles.pickerTitle}>📅 Select Exam Date</Text>
+
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={handleChange}
+          />
+
+          {Platform.OS === 'ios' && (
+            <View style={styles.pickerActions}>
+              <TouchableOpacity
+                style={styles.pickerCancelBtn}
+                onPress={onClose}
+              >
+                <Text style={styles.pickerCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.pickerConfirmBtn}
+                onPress={() => {
+                  const formatted = date.toISOString().split('T')[0];
+                  onConfirm(formatted);
+                  onClose();
+                }}
+              >
+                <Text style={styles.pickerConfirmText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+
+// ─── Main Component ──────────────────────────────────────────────
 export default function CreatePaper() {
   const navigation = useNavigation();
+
   const route = useRoute();
 
   const { courseId, term, type } = route.params || {};
 
   const termFromQuery = term || 'Mid';
-  const typeFromQuery = type || 'theory';
 
-  const [sessions, setSessions] = useState([]);
+  const typeFromQuery = type || 'theory';
 
   const [formData, setFormData] = useState({
     courseTitle: '',
@@ -368,28 +726,45 @@ export default function CreatePaper() {
   });
 
   const [loading, setLoading] = useState(true);
+
   const [errors, setErrors] = useState({});
+
   const [canView, setCanView] = useState(false);
-  const [canCreatePaper, setCanCreatePaper] = useState(false);
+
+  const [canCreatePaper, setCanCreatePaper] =
+    useState(false);
+
   const [userRoles, setUserRoles] = useState([]);
 
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [timeStartDate, setTimeStartDate] =
+    useState(null);
 
-  const [timeStart, setTimeStart] = useState(null);
-  const [timeEnd, setTimeEnd] = useState(null);
+  const [timeEndDate, setTimeEndDate] =
+    useState(null);
 
+  const [showDatePicker, setShowDatePicker] =
+    useState(false);
+
+  const [showTimePicker, setShowTimePicker] =
+    useState(false);
+
+  // ─── Init ────────────────────────────────────────────────────
   useEffect(() => {
     init();
-  }, [courseId, termFromQuery]);
+  }, []);
 
   const init = async () => {
     try {
-      const userId = await AsyncStorage.getItem('user_id');
-      const rolesData = await AsyncStorage.getItem('user_roles');
+      const userId =
+        await AsyncStorage.getItem('user_id');
 
-      const roles = rolesData
-        ? JSON.parse(rolesData).map((r) => r.toLowerCase())
+      const rolesRaw =
+        await AsyncStorage.getItem('user_roles');
+
+      const roles = rolesRaw
+        ? JSON.parse(rolesRaw).map((r) =>
+            r.toLowerCase()
+          )
         : [];
 
       setUserRoles(roles);
@@ -401,24 +776,30 @@ export default function CreatePaper() {
 
       const isDirector = roles.includes('director');
 
-      if (!courseId) {
-        navigation.replace('Unauthorized');
-        return;
-      }
-
       if (isDirector) {
         setCanView(true);
+
         setCanCreatePaper(true);
+
         fetchPaperInfo(courseId, termFromQuery, true);
       } else {
-        checkCourseAssignment(userId, courseId, termFromQuery);
+        checkCourseAssignment(
+          userId,
+          courseId,
+          termFromQuery
+        );
       }
-    } catch (error) {
-      console.log('Storage error:', error);
+    } catch (err) {
+      console.log('Init error:', err);
     }
   };
 
-  const fetchPaperInfo = async (id, term, isDirector = false) => {
+  // ─── Fetch Paper ─────────────────────────────────────────────
+  const fetchPaperInfo = async (
+    id,
+    term,
+    isDirector = false
+  ) => {
     try {
       setLoading(true);
 
@@ -434,6 +815,13 @@ export default function CreatePaper() {
 
       const data = response.data;
 
+      const timeString =
+        data.startTime && data.endTime
+          ? `${to12HourFormat(
+              data.startTime
+            )} - ${to12HourFormat(data.endTime)}`
+          : '';
+
       setFormData({
         courseTitle: data.courseTitle || '',
         courseCode: data.courseCode || '',
@@ -442,19 +830,24 @@ export default function CreatePaper() {
         examDate: data.examDate
           ? data.examDate.split('T')[0]
           : '',
-        time:
-          data.startTime && data.endTime
-            ? `${to12HourFormat(data.startTime)} - ${to12HourFormat(
-                data.endTime
-              )}`
+        time: timeString,
+        duration:
+          data.duration != null
+            ? String(data.duration)
             : '',
-        duration: data.duration || '',
         degreeProgram: data.degreeProgram || '',
-        totalMarks: data.totalMarks || '',
+        totalMarks:
+          data.totalMarks != null
+            ? String(data.totalMarks)
+            : '',
         teachersName: data.teachersName || '',
-        term: data.term === 'mid' ? 'Mid' : 'Final',
+        term:
+          data.term === 'mid' ? 'Mid' : 'Final',
         type: data.type || typeFromQuery,
-        noOfQuestions: data.noOfQuestions || '',
+        noOfQuestions:
+          data.noOfQuestions != null
+            ? String(data.noOfQuestions)
+            : '',
         paperId: data.paperId || null,
         paperStatus: data.paperStatus || '',
         paperExists: data.paperExists || false,
@@ -465,14 +858,19 @@ export default function CreatePaper() {
       }
 
       setCanView(true);
-    } catch (error) {
-      console.error('Error fetching paper info:', error);
-      navigation.replace('Error');
+    } catch (err) {
+      console.log(err);
+
+      Alert.alert(
+        'Error',
+        'Failed to load paper details.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // ─── Check Course Assignment ─────────────────────────────────
   const checkCourseAssignment = async (
     userId,
     courseId,
@@ -491,15 +889,20 @@ export default function CreatePaper() {
       }
 
       setCanView(true);
-      setCanCreatePaper(response.data.CreatePaper || false);
+
+      setCanCreatePaper(
+        response.data.CreatePaper || false
+      );
 
       fetchPaperInfo(courseId, term);
-    } catch (error) {
-      console.error('Error checking course assignment:', error);
+    } catch (err) {
+      console.log(err);
+
       navigation.replace('Unauthorized');
     }
   };
 
+  // ─── Handle Change ───────────────────────────────────────────
   const handleChange = (name, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -508,39 +911,14 @@ export default function CreatePaper() {
 
     setErrors((prev) => {
       const copy = { ...prev };
+
       delete copy[name];
+
       return copy;
     });
   };
 
-  const to12HourFormat = (time24) => {
-    if (!time24) return '';
-
-    const [hourStr, minute] = time24.split(':');
-
-    let hour = parseInt(hourStr, 10);
-
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-
-    hour = hour % 12 || 12;
-
-    return `${hour}:${minute} ${ampm}`;
-  };
-
-  const to24HourFormat = (time12) => {
-    const [time, modifier] = time12.split(' ');
-
-    let [hours, minutes] = time.split(':');
-
-    if (modifier === 'PM' && hours !== '12') {
-      hours = (parseInt(hours) + 12).toString();
-    } else if (modifier === 'AM' && hours === '12') {
-      hours = '00';
-    }
-
-    return `${hours}:${minutes}`;
-  };
-
+  // ─── Validation ──────────────────────────────────────────────
   const validateForm = () => {
     const newErrors = {};
 
@@ -548,17 +926,8 @@ export default function CreatePaper() {
       formData.examDate &&
       !/^\d{4}-\d{2}-\d{2}$/.test(formData.examDate)
     ) {
-      newErrors.examDate = 'Date must be YYYY-MM-DD';
-    }
-
-    if (formData.time) {
-      const pattern =
-        /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)\s*-\s*(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i;
-
-      if (!pattern.test(formData.time)) {
-        newErrors.time =
-          'Time must be hh:mm AM/PM - hh:mm AM/PM';
-      }
+      newErrors.examDate =
+        'Date must be YYYY-MM-DD';
     }
 
     ['duration', 'totalMarks', 'noOfQuestions'].forEach(
@@ -567,7 +936,8 @@ export default function CreatePaper() {
           formData[field] &&
           parseInt(formData[field]) < 0
         ) {
-          newErrors[field] = `${field} cannot be negative`;
+          newErrors[field] =
+            `${field} cannot be negative`;
         }
       }
     );
@@ -577,436 +947,647 @@ export default function CreatePaper() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // ─── Save ────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!validateForm()) return;
 
     if (formData.paperStatus === 'Approved') {
-      if (typeFromQuery === 'theory') {
-        navigation.navigate('CreateQuestion', {
-          paperId: formData.paperId,
-        });
-      } else if (typeFromQuery === 'lab') {
-        navigation.navigate('CreateLabQuestion', {
-          paperId: formData.paperId,
-        });
-      }
-
+      navigateToQuestions();
       return;
     }
 
     let startTime = null;
+
     let endTime = null;
 
-    if (formData.time.includes(' - ')) {
-      const times = formData.time
+    if (timeStartDate && timeEndDate) {
+      startTime = timeStartDate
+        .toTimeString()
+        .slice(0, 5);
+
+      endTime = timeEndDate
+        .toTimeString()
+        .slice(0, 5);
+    } else if (
+      formData.time &&
+      formData.time.includes(' - ')
+    ) {
+      const [t1, t2] = formData.time
         .split(' - ')
         .map((t) => t.trim());
 
-      startTime = to24HourFormat(times[0]);
-      endTime = to24HourFormat(times[1]);
+      startTime = to24HourFormat(t1);
+
+      endTime = to24HourFormat(t2);
     }
 
     const payload = {
       course_id: parseInt(courseId),
+
       session_id: formData.sessionId,
+
       term: formData.term.toLowerCase(),
-      type: formData.type || 'theory',
+
+      type: typeFromQuery ,
+
       paper_Date: formData.examDate || null,
+
       Start_time: startTime,
+
       end_time: endTime,
-      duration: parseInt(formData.duration) || null,
-      degree_programs: formData.degreeProgram || '',
-      total_marks: parseInt(formData.totalMarks) || null,
-      teacher_name: formData.teachersName || '',
+
+      duration:
+        parseInt(formData.duration) || null,
+
+      degree_programs:
+        formData.degreeProgram || '',
+
+      total_marks:
+        parseInt(formData.totalMarks) || null,
+
+      teacher_name:
+        formData.teachersName || '',
+
       no_of_questions:
         parseInt(formData.noOfQuestions) || null,
     };
 
     try {
+      
       const response = await axios.post(
         `${BASE_URL}/paper/CreateOrUpdate`,
         payload
       );
 
       if (response.status === 200) {
-        if (typeFromQuery === 'theory') {
-          navigation.navigate('CreateQuestion', {
-            paperId: formData.paperId,
-          });
-        } else if (typeFromQuery === 'lab') {
-          navigation.navigate('CreateLabQuestion', {
-            paperId: formData.paperId,
-          });
-        }
+        Alert.alert(
+        'Error',
+        'Fadfffffgg.'
+      );
+        navigateToQuestions();
+
       }
-    } catch (error) {
-      console.error('Error saving paper:', error);
+    } catch (err) {
+      console.log(err);
 
       Alert.alert(
         'Error',
-        'Failed to save paper. Check console for details.'
+        'Failed to save paper.'
       );
     }
   };
 
+  // ─── Navigate ────────────────────────────────────────────────
+  const navigateToQuestions = () => {
+    if (typeFromQuery === 'lab') {
+      navigation.navigate('LabCreateQuestion', {
+        paperId: formData.paperId,
+      });
+    } else {
+      navigation.navigate('CreateQuestion', {
+        paperId: formData.paperId,
+      });
+    }
+  };
+
+  // ─── Only approved paper locked ──────────────────────────────
+  const isLocked =
+    formData.paperStatus === 'Approved';
+
+  // ─── Button Text ─────────────────────────────────────────────
+  const buttonLabel =
+    formData.paperStatus === 'Approved'
+      ? 'View Questions'
+      : !canCreatePaper &&
+        !userRoles.includes('director')
+      ? 'Next'
+      : 'SAVE';
+
+  // ─── Loading ────────────────────────────────────────────────
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0aa36c" />
-        <Text style={{ marginTop: 10 }}>
-          Loading paper details...
-        </Text>
+        <View style={styles.loadingCard}>
+          <ActivityIndicator
+            size="large"
+            color={C.primary600}
+          />
+
+          <Text style={styles.loadingText}>
+            Loading paper details...
+          </Text>
+        </View>
       </View>
     );
   }
 
   if (!canView) return null;
 
-  const isLocked =
-    formData.paperStatus === 'Approved' ||
-    (!canCreatePaper &&
-      !userRoles.includes('director'));
-
+  // ─── Render ─────────────────────────────────────────────────
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.paperCard}>
-        <Text style={styles.title}>
-          {formData.type} Paper Information
-        </Text>
+    <View style={styles.page}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.paperCard}>
+          {/* ─── Title ─── */}
+          <View style={styles.cardTitleRow}>
+            <View style={styles.cardTitleAccent} />
 
-        <Text style={styles.course}>
-          {formData.courseTitle}
-        </Text>
-
-        <Text style={styles.code}>
-          Course Code: {formData.courseCode}
-        </Text>
-
-        {Object.values(errors).map((err, i) => (
-          <Text key={i} style={styles.error}>
-            {err}
-          </Text>
-        ))}
-
-        {/* Session */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Session</Text>
-
-          <TextInput
-            style={styles.input}
-            value={formData.sessionName}
-            editable={false}
-          />
-        </View>
-
-        {/* Exam Date */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Date of Exam</Text>
-
-          <TouchableOpacity
-            disabled={isLocked}
-            onPress={() => setShowDatePicker(true)}
-            style={styles.input}
-          >
-            <Text>
-              {formData.examDate || 'Select Date'}
+            <Text style={styles.cardTitle}>
+              {formData.type
+                ? formData.type.charAt(0).toUpperCase() +
+                  formData.type.slice(1)
+                : ''}{' '}
+              Paper Information
             </Text>
-          </TouchableOpacity>
+          </View>
 
-          {showDatePicker && (
-            <DateTimePicker
-              value={
-                formData.examDate
-                  ? new Date(formData.examDate)
-                  : new Date()
+          {/* ─── Course ─── */}
+          <Text style={styles.courseHeading}>
+            {formData.courseTitle}
+          </Text>
+
+          <View style={styles.courseCodeBadge}>
+            <Text style={styles.courseCodeText}>
+              Course Code: {formData.courseCode}
+            </Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* Session */}
+          <FormField label="Session">
+            <ReadOnlyInput
+              value={formData.sessionName}
+            />
+          </FormField>
+
+          {/* Date */}
+          <FormField
+            label="Date of Exam"
+            error={errors.examDate}
+          >
+            <TouchableOpacity
+              style={[
+                styles.input,
+                styles.inputTouchable,
+              ]}
+              activeOpacity={0.7}
+              onPress={() => {
+                if (!isLocked) {
+                  setShowDatePicker(true);
+                }
+              }}
+            >
+              <Text
+                style={[
+                  styles.inputText,
+                  !formData.examDate &&
+                    styles.inputPlaceholder,
+                ]}
+              >
+                {formData.examDate ||
+                  'Select Exam Date'}
+              </Text>
+
+              {!isLocked && (
+                <Text style={styles.inputIcon}>
+                  📅
+                </Text>
+              )}
+            </TouchableOpacity>
+          </FormField>
+
+          {/* Time */}
+          <FormField
+            label="Time"
+            error={errors.time}
+          >
+            <TouchableOpacity
+              style={[
+                styles.input,
+                styles.inputTouchable,
+              ]}
+              activeOpacity={0.7}
+              onPress={() => {
+                if (!isLocked) {
+                  setShowTimePicker(true);
+                }
+              }}
+            >
+              <Text
+                style={[
+                  styles.inputText,
+                  !formData.time &&
+                    styles.inputPlaceholder,
+                ]}
+              >
+                {formData.time ||
+                  '09:00 AM - 12:00 PM'}
+              </Text>
+
+              {!isLocked && (
+                <Text style={styles.inputIcon}>
+                  ⏰
+                </Text>
+              )}
+            </TouchableOpacity>
+          </FormField>
+
+          {/* Duration */}
+          <FormField
+            label="Duration"
+            error={errors.duration}
+          >
+            <TextInput
+              style={[
+                styles.input,
+                isLocked &&
+                  styles.inputReadOnly,
+              ]}
+              value={formData.duration}
+              onChangeText={(v) =>
+                handleChange('duration', v)
               }
-              mode="date"
-              display="default"
-              onChange={(event, date) => {
-                setShowDatePicker(false);
-
-                if (date) {
-                  handleChange(
-                    'examDate',
-                    date.toISOString().split('T')[0]
-                  );
-                }
-              }}
+              editable={
+                formData.paperStatus !==
+                'Approved'
+              }
+              keyboardType="numeric"
+              placeholder="Duration"
             />
-          )}
-        </View>
+          </FormField>
 
-        {/* Time */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Time</Text>
+          {/* Degree Program */}
+          <FormField label="Degree Program">
+            <TextInput
+              style={[
+                styles.input,
+                isLocked &&
+                  styles.inputReadOnly,
+              ]}
+              value={formData.degreeProgram}
+              onChangeText={(v) =>
+                handleChange(
+                  'degreeProgram',
+                  v
+                )
+              }
+              editable={
+                formData.paperStatus !==
+                'Approved'
+              }
+              placeholder="Degree Program"
+            />
+          </FormField>
 
-          <TouchableOpacity
-            disabled={isLocked}
-            onPress={() => setShowTimePicker(true)}
-            style={styles.input}
+          {/* Total Marks */}
+          <FormField
+            label="Total Marks"
+            error={errors.totalMarks}
           >
-            <Text>
-              {formData.time || 'Select Time'}
+            <TextInput
+              style={[
+                styles.input,
+                isLocked &&
+                  styles.inputReadOnly,
+              ]}
+              value={formData.totalMarks}
+              onChangeText={(v) =>
+                handleChange(
+                  'totalMarks',
+                  v
+                )
+              }
+              editable={
+                formData.paperStatus !==
+                'Approved'
+              }
+              keyboardType="numeric"
+              placeholder="Total Marks"
+            />
+          </FormField>
+
+          {/* Teacher */}
+          <FormField label="Teacher's Name">
+            <ReadOnlyInput
+              value={formData.teachersName}
+            />
+          </FormField>
+
+          {/* Term */}
+          <FormField label="Term">
+            <ReadOnlyInput value={formData.term} />
+          </FormField>
+
+          {/* No Questions */}
+          <FormField
+            label="No of Questions"
+            error={errors.noOfQuestions}
+          >
+            <TextInput
+              style={[
+                styles.input,
+                isLocked &&
+                  styles.inputReadOnly,
+              ]}
+              value={formData.noOfQuestions}
+              onChangeText={(v) =>
+                handleChange(
+                  'noOfQuestions',
+                  v
+                )
+              }
+              editable={
+                formData.paperStatus !==
+                'Approved'
+              }
+              keyboardType="numeric"
+              placeholder="No of Questions"
+            />
+          </FormField>
+
+          {/* Save */}
+          <TouchableOpacity
+            style={styles.saveBtn}
+            onPress={handleSave}
+          >
+            <Text style={styles.saveBtnText}>
+              {buttonLabel}
             </Text>
           </TouchableOpacity>
-
-          {showTimePicker && (
-            <DateTimePicker
-              value={timeStart || new Date()}
-              mode="time"
-              is24Hour={false}
-              display="default"
-              onChange={(event, time) => {
-                setShowTimePicker(false);
-
-                if (time) {
-                  setTimeStart(time);
-
-                  const endTimeTemp = new Date(
-                    time.getTime() + 2 * 60 * 60 * 1000
-                  );
-
-                  setTimeEnd(endTimeTemp);
-
-                  handleChange(
-                    'time',
-                    `${time.toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })} - ${endTimeTemp.toLocaleTimeString(
-                      [],
-                      {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      }
-                    )}`
-                  );
-                }
-              }}
-            />
-          )}
-
-          {errors.time && (
-            <Text style={styles.error}>
-              {errors.time}
-            </Text>
-          )}
         </View>
 
-        {/* Duration */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Duration</Text>
+        <View style={{ height: 40 }} />
+      </ScrollView>
 
-          <TextInput
-            style={styles.input}
-            value={String(formData.duration)}
-            onChangeText={(v) =>
-              handleChange('duration', v)
-            }
-            editable={!isLocked}
-            keyboardType="numeric"
-          />
+      {/* ─── Date Picker ─── */}
+      <DatePickerModal
+        visible={showDatePicker}
+        value={formData.examDate}
+        onClose={() =>
+          setShowDatePicker(false)
+        }
+        onConfirm={(dateStr) => {
+          handleChange('examDate', dateStr);
 
-          {errors.duration && (
-            <Text style={styles.error}>
-              {errors.duration}
-            </Text>
-          )}
-        </View>
+          setShowDatePicker(false);
+        }}
+      />
 
-        {/* Degree Program */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Degree Program</Text>
+      {/* ─── Time Picker ─── */}
+      <TimeRangePickerModal
+      //  key={showTimePicker} 
+        visible={showTimePicker}
+        onClose={() =>
+          setShowTimePicker(false)
+        }
+        onConfirm={(
+          endDate,
+          startD,
+          endD,
+          startStr,
+          endStr
+        ) => {
+          setTimeStartDate(startD);
 
-          <TextInput
-            style={styles.input}
-            value={formData.degreeProgram}
-            onChangeText={(v) =>
-              handleChange('degreeProgram', v)
-            }
-            editable={!isLocked}
-          />
-        </View>
+          setTimeEndDate(endD);
 
-        {/* Total Marks */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Total Marks</Text>
+          handleChange(
+            'time',
+            `${startStr} - ${endStr}`
+          );
 
-          <TextInput
-            style={styles.input}
-            value={String(formData.totalMarks)}
-            onChangeText={(v) =>
-              handleChange('totalMarks', v)
-            }
-            editable={!isLocked}
-            keyboardType="numeric"
-          />
-
-          {errors.totalMarks && (
-            <Text style={styles.error}>
-              {errors.totalMarks}
-            </Text>
-          )}
-        </View>
-
-        {/* Teacher */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Teacher Name</Text>
-
-          <TextInput
-            style={styles.input}
-            value={formData.teachersName}
-            editable={false}
-          />
-        </View>
-
-        {/* Term */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Term</Text>
-
-          <TextInput
-            style={styles.input}
-            value={formData.term}
-            editable={false}
-          />
-        </View>
-
-        {/* Type */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Paper Type</Text>
-
-          <TextInput
-            style={styles.input}
-            value={formData.type}
-            editable={false}
-          />
-        </View>
-
-        {/* Questions */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>
-            No of Questions
-          </Text>
-
-          <TextInput
-            style={styles.input}
-            value={String(formData.noOfQuestions)}
-            onChangeText={(v) =>
-              handleChange('noOfQuestions', v)
-            }
-            editable={!isLocked}
-            keyboardType="numeric"
-          />
-
-          {errors.noOfQuestions && (
-            <Text style={styles.error}>
-              {errors.noOfQuestions}
-            </Text>
-          )}
-        </View>
-
-        {/* Button */}
-        <TouchableOpacity
-          style={styles.btn}
-          onPress={handleSave}
-        >
-          <Text style={styles.btnText}>
-            {formData.paperStatus === 'Approved'
-              ? 'View Questions'
-              : !canCreatePaper &&
-                !userRoles.includes('director')
-              ? 'Next'
-              : 'SAVE'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          setShowTimePicker(false);
+        }}
+      />
+    </View>
   );
 }
 
+// ─── Styles ─────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
+  page: {
     flex: 1,
-    backgroundColor: '#e6fff6',
-    padding: 20,
-  },
-
-  paperCard: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 22,
-    marginVertical: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-  },
-
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#0aa36c',
-    marginBottom: 10,
-    textTransform: 'capitalize',
-  },
-
-  course: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#222',
-  },
-
-  code: {
-    fontSize: 15,
-    color: '#666',
-    marginBottom: 20,
-  },
-
-  formGroup: {
-    marginBottom: 16,
-  },
-
-  label: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 6,
-    color: '#333',
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: '#dcdcdc',
-    borderRadius: 10,
-    padding: 12,
-    backgroundColor: '#fff',
-  },
-
-  btn: {
-    backgroundColor: '#0aa36c',
-    paddingVertical: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-
-  btnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-
-  error: {
-    color: 'red',
-    marginTop: 4,
-    marginBottom: 5,
+    backgroundColor: '#f0fdf4',
   },
 
   loadingContainer: {
     flex: 1,
+    backgroundColor: '#f0fdf4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+
+  loadingCard: {
+    backgroundColor: C.white,
+    borderRadius: 20,
+    padding: 40,
+    alignItems: 'center',
+  },
+
+  loadingText: {
+    marginTop: 12,
+    color: C.gray700,
+    fontSize: 15,
+  },
+
+  scroll: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    padding: 16,
+    paddingTop: 20,
+  },
+
+  paperCard: {
+    backgroundColor: C.white,
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: C.primary100,
+  },
+
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+
+  cardTitleAccent: {
+    width: 4,
+    height: 26,
+    backgroundColor: C.primary600,
+    borderRadius: 10,
+    marginRight: 10,
+  },
+
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: C.gray900,
+  },
+
+  courseHeading: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: C.gray800,
+    marginBottom: 8,
+  },
+
+  courseCodeBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: C.primary50,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 18,
+  },
+
+  courseCodeText: {
+    color: C.primary700,
+    fontWeight: '600',
+    fontSize: 12,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: C.gray100,
+    marginBottom: 20,
+  },
+
+  formGroup: {
+    marginBottom: 18,
+  },
+
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: C.gray700,
+    marginBottom: 7,
+  },
+
+  input: {
+    borderWidth: 1.5,
+    borderColor: C.gray200,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical:
+      Platform.OS === 'ios' ? 13 : 11,
+    fontSize: 14,
+    backgroundColor: C.white,
+    color: C.gray800,
+  },
+
+  inputTouchable: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  inputText: {
+    fontSize: 14,
+    color: C.gray800,
+  },
+
+  inputPlaceholder: {
+    color: C.gray400,
+  },
+
+  inputIcon: {
+    fontSize: 16,
+  },
+
+  inputReadOnly: {
+    backgroundColor: C.gray50,
+  },
+
+  readOnlyText: {
+    color: C.gray600,
+    fontSize: 14,
+  },
+
+  errorText: {
+    color: C.error,
+    marginTop: 5,
+    fontSize: 12,
+  },
+
+  saveBtn: {
+    backgroundColor: C.primary600,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+
+  saveBtnText: {
+    color: C.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 24,
+  },
+
+  pickerCard: {
+    backgroundColor: C.white,
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 360,
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+
+  pickerTitle: {
+    textAlign: 'center',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 10,
+    color: C.gray900,
+  },
+
+  pickerActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginTop: 12,
+    gap: 10,
+  },
+
+  pickerCancelBtn: {
+    flex: 1,
+    backgroundColor: C.gray100,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+
+  pickerCancelText: {
+    color: C.gray700,
+    fontWeight: '600',
+  },
+
+  pickerConfirmBtn: {
+    flex: 1,
+    backgroundColor: C.primary600,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+
+  pickerConfirmText: {
+    color: C.white,
+    fontWeight: '700',
   },
 });
