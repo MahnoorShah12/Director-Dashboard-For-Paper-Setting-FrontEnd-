@@ -18,7 +18,7 @@ import { BASE_URL } from "../../../../../config/Api";
 // ✅ NEW LIBRARY (correct)
 import { pick, types, isCancel } from "@react-native-documents/picker";
 
-const BASE = "http://192.168.31.125/fypProject";
+const BASE = "http://192.168.137.1/fypProject";
 
 const Solution = () => {
   const route = useRoute();

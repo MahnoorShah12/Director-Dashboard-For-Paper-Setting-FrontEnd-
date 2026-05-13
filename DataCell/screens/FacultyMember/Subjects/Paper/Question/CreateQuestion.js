@@ -38,7 +38,7 @@ import { BASE_URL } from "../../../../../config/Api";
 
 // ── Constants ─────────────────────────────────────────────────
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const baseUrl = "http://192.168.31.125/fypProject";
+const baseUrl = "http://192.168.137.1/fypProject";
 
 
 // ============================================================
@@ -110,7 +110,7 @@ const CreateQuestion = () => {
     text: "",
     marks: 0,
     difficulty: "easy",
-    cloId: null,
+    cloIds: [],
     image: null,
     currentImage: null,
     imagePreview: null,
@@ -172,6 +172,12 @@ const CreateQuestion = () => {
     (item?.Title || "").toLowerCase().includes(searchText.toLowerCase())
   );
 
+
+
+
+
+  
+
   // Computed question list & selected question from active tab
   const questions = paperDetails?.Questions || [];
   const selectedQuestion = activeTab < questions.length ? questions[activeTab] : null;
@@ -196,8 +202,8 @@ const CreateQuestion = () => {
   const imageUri = editForm.imagePreview
     ? editForm.imagePreview
     : editForm.currentImage
-    ? `${baseUrl}${editForm.currentImage}`
-    : null;
+      ? `${baseUrl}${editForm.currentImage}`
+      : null;
 
   // Debug
   console.log("Questions:", questions);
@@ -252,7 +258,7 @@ const CreateQuestion = () => {
         setPaperDetails(response.data);
         setActiveTab(0);
         setLoading(false);
-      } catch (error) {}
+      } catch (error) { }
     };
 
     fetchPaperDetails();
@@ -426,7 +432,7 @@ const CreateQuestion = () => {
       text: question.Text || "",
       marks: question.Marks || 0,
       difficulty: question.DifficultyLevel || "easy",
-      cloId: question.CloId || null,
+      cloIds: (question.CLOs || question.Clos || []).map(c => Number(c?.Id || c?.id)).filter(Boolean),
       image: null,
       imagePreview: null,
       currentImage: question.Image || null,
@@ -475,7 +481,7 @@ const CreateQuestion = () => {
         text: editForm.text,
         marks: parseInt(editForm.marks),
         difficulty_level: editForm.difficulty,
-        clo_id: editForm.cloId ? parseInt(editForm.cloId) : null,
+        clo_ids: editForm.cloIds,
         editedByDirector: isUserDirector,
       };
 
@@ -679,7 +685,7 @@ const CreateQuestion = () => {
     try {
       await axios.post(`${BASE_URL}/paper/directorApprove/${paperDetails.PaperId}`);
       setPaperDetails((prev) => ({ ...prev, PaperStatus: "Approved" }));
-    } catch (error) {}
+    } catch (error) { }
   };
 
   // Approve or reject a single question
@@ -1021,22 +1027,69 @@ const CreateQuestion = () => {
                         />
                       </View>
 
-                      {/* CLO Selector */}
+                      {/* CLO Multi-Select — replace the old single CLO picker */}
                       <View style={styles.formGroup}>
-                        <Text style={styles.label}>CLO</Text>
+                        <Text style={styles.label}>Select CLO(s)</Text>
                         {loadingClos ? (
                           <Text>Loading CLOs...</Text>
                         ) : (
-                          <TouchableOpacity
-                            style={styles.selectOption}
-                            onPress={() => setShowCloListModal(true)}
-                          >
-                            <Text>
-                              {editForm.cloId
-                                ? (clos.find((c) => c.Id === editForm.cloId)?.Title || editForm.cloId)
-                                : "Select CLO"}
-                            </Text>
-                          </TouchableOpacity>
+                          <View style={{ gap: 8 }}>
+                            {clos.map((clo) => {
+                              const isChecked = editForm.cloIds?.some(
+                                (id) => Number(id) === Number(clo.Id)
+                              ) || false;
+
+                              return (
+                                <TouchableOpacity
+                                  key={clo.Id}
+                                  onPress={() => {
+                                    setEditForm((prev) => {
+                                      const current = prev.cloIds || [];
+                                      if (isChecked) {
+                                        return { ...prev, cloIds: current.filter((c) => c !== clo.Id) };
+                                      } else {
+                                        return { ...prev, cloIds: [...current, clo.Id] };
+                                      }
+                                    });
+                                  }}
+                                  style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    paddingVertical: 10,
+                                    paddingHorizontal: 12,
+                                    borderRadius: 8,
+                                    borderWidth: 1,
+                                    borderColor: isChecked ? '#10B981' : '#E2E8F0',
+                                    backgroundColor: isChecked ? '#ECFDF5' : '#FAFAFA',
+                                    marginBottom: 4,
+                                  }}
+                                >
+                                  <View style={{
+                                    width: 20, height: 20,
+                                    borderRadius: 4,
+                                    borderWidth: 2,
+                                    borderColor: isChecked ? '#10B981' : '#CBD5E1',
+                                    backgroundColor: isChecked ? '#10B981' : '#fff',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginRight: 10,
+                                  }}>
+                                    {isChecked && (
+                                      <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>✓</Text>
+                                    )}
+                                  </View>
+                                  <Text style={{
+                                    flex: 1,
+                                    fontSize: 14,
+                                    color: isChecked ? '#065F46' : '#374151',
+                                    fontWeight: isChecked ? '500' : '400',
+                                  }}>
+                                    {clo.Title}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
                         )}
                       </View>
                     </View>
@@ -1134,32 +1187,37 @@ const CreateQuestion = () => {
                           styles.tag,
                           selectedQuestion.DifficultyLevel === "easy" ? styles.difficultyEasy
                             : selectedQuestion.DifficultyLevel === "medium" ? styles.difficultyMedium
-                            : styles.difficultyTough,
+                              : styles.difficultyTough,
                         ]}>
                           {selectedQuestion.DifficultyLevel}
                         </Text>
-                        <Text style={[styles.tag, styles.cloTag]}>
+                        {/* <Text style={[styles.tag, styles.cloTag]}>
                           {clos.find((c) => c.Id === selectedQuestion.CloId)?.Title || selectedQuestion.CloId}
-                        </Text>
+                        </Text> */}
 
+                        <Text style={[styles.tag, styles.cloTag]}>
+                          {(selectedQuestion.Clos || selectedQuestion.CLOs || [])
+                            .map(c => c.description || c.name || c.Title)
+                            .join(', ') || 'No CLO'}
+                        </Text>
                         {/* Approve / Reject Buttons (role-based) */}
                         {(((paperDetails.PaperStatus?.toLowerCase() === "waitingforfacultyapprover") && !isUserDirector) ||
                           ((paperDetails.PaperStatus?.toLowerCase() === "submitted") && isUserDirector)) && (
-                          <View style={styles.approvalActions}>
-                            <TouchableOpacity
-                              style={styles.approveBtn}
-                              onPress={() => handleApproveReject(selectedQuestion.Id, "approved")}
-                            >
-                              <Text>✅ Approve</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={styles.rejectBtn}
-                              onPress={() => handleApproveReject(selectedQuestion.Id, "reject")}
-                            >
-                              <Text>❌ Reject</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
+                            <View style={styles.approvalActions}>
+                              <TouchableOpacity
+                                style={styles.approveBtn}
+                                onPress={() => handleApproveReject(selectedQuestion.Id, "approved")}
+                              >
+                                <Text>✅ Approve</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.rejectBtn}
+                                onPress={() => handleApproveReject(selectedQuestion.Id, "reject")}
+                              >
+                                <Text>❌ Reject</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
                       </View>
                     </View>
                   )

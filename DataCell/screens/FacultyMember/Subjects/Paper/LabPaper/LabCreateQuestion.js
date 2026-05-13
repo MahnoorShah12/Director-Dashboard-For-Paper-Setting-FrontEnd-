@@ -38,7 +38,7 @@ import { BASE_URL } from "../../../../../config/Api";
 
 // ── Constants ─────────────────────────────────────────────────
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const baseUrl = "http://192.168.31.125/fypProject";
+const baseUrl = "http://192.168.137.1/fypProject";
 
 
 // ============================================================

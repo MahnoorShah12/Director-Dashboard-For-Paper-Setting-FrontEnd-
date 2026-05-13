@@ -87,16 +87,16 @@ const PastPaper = () => {
 
         <Text style={styles.title}>{item.CourseTitle}</Text>
 
-        <Text style={styles.info}>📅 {item.SessionName}</Text>
+        <Text style={styles.info}> {item.SessionName}</Text>
         {item.CourseCode && (
-          <Text style={styles.info}>🔖 {item.CourseCode}</Text>
+          <Text style={styles.info}> {item.CourseCode}</Text>
         )}
 
         <TouchableOpacity
           style={styles.viewBtn}
           onPress={() => handleViewPaper(item)}
         >
-          <Text style={styles.viewText}>👁 Preview Paper</Text>
+          <Text style={styles.viewText}>Preview Paper</Text>
         </TouchableOpacity>
       </TouchableOpacity>
     );

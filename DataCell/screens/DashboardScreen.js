@@ -42,7 +42,7 @@ const DashboardScreen = ({ navigation }) => {
 
         if (parsedRoles.includes('faculty') && storedID) {
           const response = await fetch(
-            `http://192.168.31.125/fypProject/api/paper/Get_Teacher_Courses/${storedID}`
+            `http://192.168.31.144/fypProject/api/paper/Get_Teacher_Courses/${storedID}`
           );
           const data = await response.json();
           setTeacherCourses(data.Courses || []);

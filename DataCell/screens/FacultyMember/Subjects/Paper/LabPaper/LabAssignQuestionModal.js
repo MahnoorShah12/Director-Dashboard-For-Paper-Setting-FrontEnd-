@@ -43,7 +43,7 @@ export default function LabAssignQuestionModal({
         const assignedTeacherId = assignmentRes.data?.editorId || null;
 
         setTeachers(teachersList);
-        setSelectedTeacher(assignedTeacherId); 
+        setSelectedTeacher(assignedTeacherId);
       } catch (err) {
         console.error("Failed to fetch teachers or assigned editor", err);
       } finally {
@@ -72,7 +72,7 @@ export default function LabAssignQuestionModal({
         QuestionId: selectedQuestionId,
         UserId: selectedTeacher
       });
-      
+
       Alert.alert("Success", "Question assigned successfully!");
       onClose();
     } catch (err) {
@@ -87,7 +87,7 @@ export default function LabAssignQuestionModal({
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.modal}>
-          
+
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Assign Question</Text>
@@ -127,7 +127,7 @@ export default function LabAssignQuestionModal({
                       <View style={[styles.radioCircle, isSelected && styles.radioSelected]}>
                         {isSelected && <View style={styles.radioInner} />}
                       </View>
-                      
+
                       <Text style={[styles.teacherName, isSelected && styles.selectedText]}>
                         {t.name}
                       </Text>
@@ -140,10 +140,10 @@ export default function LabAssignQuestionModal({
 
           {/* Footer */}
           <View style={styles.footer}>
-            <TouchableOpacity 
-                style={[styles.assignBtn, assigning && { opacity: 0.7 }]} 
-                onPress={handleAssign}
-                disabled={assigning}
+            <TouchableOpacity
+              style={[styles.assignBtn, assigning && { opacity: 0.7 }]}
+              onPress={handleAssign}
+              disabled={assigning}
             >
               <Text style={styles.assignBtnText}>
                 {assigning ? "Assigning..." : "Assign"}
